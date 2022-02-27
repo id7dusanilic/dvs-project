@@ -2,6 +2,7 @@
 *.d
 
 # Object files
+build/
 *.o
 *.ko
 *.obj
@@ -17,6 +18,7 @@
 *.pch
 
 # Libraries
+lib/
 *.lib
 *.a
 *.la
@@ -50,3 +52,6 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+# Vim buffers
+*.sw*
