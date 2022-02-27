@@ -13,10 +13,10 @@ $(BUILD_DIR)/%.o: $(INCLUDE_DIR)/%.c
 
 lib/lib%.so: $(BUILD_DIR)/%.o
 	mkdir -p $(LIB_DIR)
-	$(CC) -shared -o $@ $^
+	$(CC) $(CFLAGS) -shared -o $@ $^
 
 %: test/%.c $(BUILD_DIR)/utils.o
-	$(CC) $^ -I$(INCLUDE_DIR) -o $(BUILD_DIR)/$@
+	$(CC) $(CFLAGS) $^ -I$(INCLUDE_DIR) -o $(BUILD_DIR)/$@
 
 clean:
 	rm -rf $(BUILD_DIR) $(LIB_DIR)
