@@ -18,4 +18,4 @@ void image_free(image_t image);
 
 image_t bin2image(const char* filename);
 
-void invert_image(image_t image);
+image_t invert_image(image_t image);

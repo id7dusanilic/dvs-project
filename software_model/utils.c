@@ -57,13 +57,15 @@ image_t bin2image(const char* filename) {
     return image;
 }
 
-void invert_image(image_t image) {
-    for(int i=0; i<image.height; i++) {
-        for(int j=0; j<image.width; j++) {
-            image.data[i][j] = 255 - image.data[i][j];
+image_t invert_image(image_t input) {
+    image_t output = image_alloc(input.height, input.width);
+
+    for(int i=0; i<output.height; i++) {
+        for(int j=0; j<output.width; j++) {
+            output.data[i][j] = 255 - input.data[i][j];
         }
     }
-    return;
+    return output;
 }
 
 image_t image_alloc(uint32_t height, uint32_t width) {

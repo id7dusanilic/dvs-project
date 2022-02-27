@@ -5,8 +5,6 @@
 #include "utils.h"
 
 int main(int argc, char** argv) {
-    uint32_t width, height;
-
     if(argc <3) {
         printf("Input and output filenames not specified! Aborting...\n");
         exit(1);
@@ -17,11 +15,12 @@ int main(int argc, char** argv) {
 
     image_t image_in = bin2image(input_filename);
 
-    invert_image(image_in);
+    image_t output_image = invert_image(image_in);
 
-    save_to_pgm(output_filename, image_in);
+    save_to_pgm(output_filename, output_image);
 
     image_free(image_in);
+    image_free(output_image);
 
     return 0;
 }
