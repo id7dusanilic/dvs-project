@@ -5,19 +5,6 @@
 
 #include "utils.h"
 
-void save_to_pgm(const char* filename, image_t image) {
-    FILE* file = fopen(filename, "w");
-    assert(file != NULL);
-
-    fprintf(file, "P5 %ud %ud %d ", image.width, image.height, 255);
-    for(int i=0; i<image.height; i++) {
-        fwrite(image.data[i], sizeof(**image.data), image.width, file);
-    }
-
-    fclose(file);
-    return;
-}
-
 uint8_t** matrix_alloc(uint32_t height, uint32_t width) {
     uint8_t** matrix = malloc(height * sizeof(*matrix));
     for(int i=0; i<height; i++) {
@@ -32,6 +19,33 @@ void matrix_free(uint8_t** matrix, uint32_t height) {
     }
     free(matrix);
     return;
+}
+
+image_t image_alloc(uint32_t height, uint32_t width) {
+    image_t image = {
+        .data = matrix_alloc(height, width),
+        .height = height,
+        .width = width
+    };
+
+    return image;
+}
+
+void image_free(image_t image) {
+    matrix_free(image.data, image.height);
+}
+
+image_t extract_segment(image_t image, uint32_t start_x, uint32_t start_y, uint16_t rows, uint16_t cols) {
+    image_t segment = {
+        .data = malloc(rows * sizeof(*(segment.data))),
+        .height = rows,
+        .width = cols
+    };
+
+    for(int i=0; i<rows; i++) {
+        segment.data[i] = &(image.data[i+start_x][start_y]);
+    }
+    return segment;
 }
 
 image_t bin2image(const char* filename) {
@@ -57,6 +71,19 @@ image_t bin2image(const char* filename) {
     return image;
 }
 
+void save_to_pgm(const char* filename, image_t image) {
+    FILE* file = fopen(filename, "w");
+    assert(file != NULL);
+
+    fprintf(file, "P5 %ud %ud %d ", image.width, image.height, 255);
+    for(int i=0; i<image.height; i++) {
+        fwrite(image.data[i], sizeof(**image.data), image.width, file);
+    }
+
+    fclose(file);
+    return;
+}
+
 image_t invert_image(image_t input) {
     image_t output = image_alloc(input.height, input.width);
 
@@ -67,18 +94,3 @@ image_t invert_image(image_t input) {
     }
     return output;
 }
-
-image_t image_alloc(uint32_t height, uint32_t width) {
-    image_t image = {
-        .data = matrix_alloc(height, width),
-        .height = height,
-        .width = width
-    };
-
-    return image;
-}
-
-void image_free(image_t image) {
-    matrix_free(image.data, image.height);
-}
-
