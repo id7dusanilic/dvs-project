@@ -15,13 +15,13 @@ int main(int argc, char** argv) {
     char* input_filename = argv[1];
     char* output_filename = argv[2];
 
-    uint8_t** image_in = bin2image(input_filename, &height, &width);
+    image_t image_in = bin2image(input_filename);
 
-    invert_image(image_in, height, width);
+    invert_image(image_in);
 
-    save_to_pgm(output_filename, image_in, width, height);
+    save_to_pgm(output_filename, image_in);
 
-    matrix_free(image_in, height);
+    image_free(image_in);
 
     return 0;
 }

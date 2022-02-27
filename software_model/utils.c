@@ -5,13 +5,13 @@
 
 #include "utils.h"
 
-void save_to_pgm(const char* filename, uint8_t** image, uint32_t width, uint32_t height) {
+void save_to_pgm(const char* filename, image_t image) {
     FILE* file = fopen(filename, "w");
     assert(file != NULL);
 
-    fprintf(file, "P5 %ud %ud %d ", width, height, 255);
-    for(int i=0; i<height; i++) {
-        fwrite(image[i], sizeof(**image), width, file);
+    fprintf(file, "P5 %ud %ud %d ", image.width, image.height, 255);
+    for(int i=0; i<image.height; i++) {
+        fwrite(image.data[i], sizeof(**image.data), image.width, file);
     }
 
     fclose(file);
@@ -34,17 +34,22 @@ void matrix_free(uint8_t** matrix, uint32_t height) {
     return;
 }
 
-uint8_t** bin2image(const char* filename, uint32_t* height_ptr, uint32_t* width_ptr) {
+image_t bin2image(const char* filename) {
     FILE* file = fopen(filename, "r");
     assert(file != NULL);
+    uint32_t width, height;
 
-    fread(width_ptr, DIM_BYTE_COUNT, 1, file);
-    fread(height_ptr, DIM_BYTE_COUNT, 1, file);
+    fread(&width, DIM_BYTE_COUNT, 1, file);
+    fread(&height, DIM_BYTE_COUNT, 1, file);
 
-    uint8_t** image = matrix_alloc(*height_ptr, *width_ptr);
+    image_t image = {
+        .data = matrix_alloc(height, width),
+        .height = height,
+        .width = width
+    };
 
-    for(int i=0; i<*height_ptr; i++) {
-        fread(image[i], sizeof(**image), *width_ptr, file);
+    for(int i=0; i<image.height; i++) {
+        fread(image.data[i], sizeof(**image.data), image.width, file);
     }
 
     fclose(file);
@@ -52,11 +57,26 @@ uint8_t** bin2image(const char* filename, uint32_t* height_ptr, uint32_t* width_
     return image;
 }
 
-void invert_image(uint8_t** image, uint32_t height, uint32_t width) {
-    for(int i=0; i<height; i++) {
-        for(int j=0; j<width; j++) {
-            image[i][j] = 255 - image[i][j];
+void invert_image(image_t image) {
+    for(int i=0; i<image.height; i++) {
+        for(int j=0; j<image.width; j++) {
+            image.data[i][j] = 255 - image.data[i][j];
         }
     }
     return;
 }
+
+image_t image_alloc(uint32_t height, uint32_t width) {
+    image_t image = {
+        .data = matrix_alloc(height, width),
+        .height = height,
+        .width = width
+    };
+
+    return image;
+}
+
+void image_free(image_t image) {
+    matrix_free(image.data, image.height);
+}
+
