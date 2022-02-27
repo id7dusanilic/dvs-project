@@ -21,3 +21,5 @@ image_t bin2image(const char* filename);
 void save_to_pgm(const char* filename, image_t image);
 
 image_t invert_image(image_t image);
+
+image_t bilinear_scaling(image_t input, double sx, double sy);

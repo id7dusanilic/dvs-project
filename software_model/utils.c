@@ -94,3 +94,36 @@ image_t invert_image(image_t input) {
     }
     return output;
 }
+
+image_t bilinear_scaling(image_t input, double sx, double sy) {
+    image_t output = image_alloc((uint32_t) (input.height * sy), (uint32_t) (input.width * sx));
+
+    double x, y;
+    double alpha_x, alpha_y;
+    uint32_t floor_x, floor_y;
+    uint32_t floor_x1, floor_y1;
+    double interp_y0, interp_y1;
+
+    for(int v=0; v<output.height; v++) {
+        for(int u=0; u<output.width; u++) {
+            x = (double) u / sx;
+            y = (double) v / sy;
+
+            alpha_x = x - (int)x;
+            alpha_y = y - (int)y;
+
+            floor_x = x - alpha_x;
+            floor_y = y - alpha_y;
+
+            floor_x1 = (floor_x >= input.width-1) ? floor_x : floor_x+1;
+            floor_y1 = (floor_y >= input.height-1) ? floor_y : floor_y+1;
+
+            interp_y0 = alpha_x * input.data[floor_y][floor_x1] + (1-alpha_x) * input.data[floor_y][floor_x];
+            interp_y1 = alpha_x * input.data[floor_y1][floor_x1] + (1-alpha_x) * input.data[floor_y1][floor_x];
+
+            output.data[v][u] = alpha_y * interp_y1 + (1-alpha_y) * interp_y0;
+        }
+    }
+
+    return output;
+}
