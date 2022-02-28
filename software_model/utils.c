@@ -108,6 +108,7 @@ image_t bilinear_scaling(image_t input, double sx, double sy) {
         y = (double) v / sy;
         alpha_y = y - (int)y;
         floor_y = y - alpha_y;
+        floor_y1 = (floor_y >= input.height-1) ? floor_y : floor_y+1;
 
         for(int u=0; u<output.width; u++) {
             x = (double) u / sx;
