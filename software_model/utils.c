@@ -84,6 +84,20 @@ void save_to_pgm(const char* filename, image_t image) {
     return;
 }
 
+void save_to_bin(const char* filename, image_t image) {
+    FILE* file = fopen(filename, "w");
+    assert(file != NULL);
+
+    fwrite(&image.width, sizeof(uint32_t), 1, file);
+    fwrite(&image.height, sizeof(uint32_t), 1, file);
+    for(int i=0; i<image.height; i++) {
+        fwrite(image.data[i], sizeof(**image.data), image.width, file);
+    }
+
+    fclose(file);
+    return;
+}
+
 image_t invert_image(image_t input) {
     image_t output = image_alloc(input.height, input.width);
 
@@ -95,26 +109,35 @@ image_t invert_image(image_t input) {
     return output;
 }
 
+double* get_scaled_coordinates(unsigned c, double sc) {
+    uint32_t num = c * sc;
+
+    double* res = malloc(sizeof(*res) * num);
+    for(int i=0; i<num; i++) {
+        res[i] = i / sc;
+    }
+    return res;
+}
+
 image_t bilinear_scaling(image_t input, double sx, double sy) {
     image_t output = image_alloc((uint32_t) (input.height * sy), (uint32_t) (input.width * sx));
 
-    double x, y;
+    double *x = get_scaled_coordinates(input.width, sx);
+    double *y = get_scaled_coordinates(input.height, sy);
     double alpha_x, alpha_y;
+
     uint32_t floor_x, floor_y;
     uint32_t floor_x1, floor_y1;
     double interp_y0, interp_y1;
 
     for(int v=0; v<output.height; v++) {
-        y = (double) v / sy;
-        alpha_y = y - (int)y;
-        floor_y = y - alpha_y;
+        alpha_y = y[v] - (int)y[v];
+        floor_y = y[v] - alpha_y;
         floor_y1 = (floor_y >= input.height-1) ? floor_y : floor_y+1;
 
         for(int u=0; u<output.width; u++) {
-            x = (double) u / sx;
-
-            alpha_x = x - (int)x;
-            floor_x = x - alpha_x;
+            alpha_x = x[u] - (int)x[u];
+            floor_x = x[u] - alpha_x;
             floor_x1 = (floor_x >= input.width-1) ? floor_x : floor_x+1;
 
             interp_y0 = alpha_x * input.data[floor_y][floor_x1] + (1-alpha_x) * input.data[floor_y][floor_x];
@@ -123,6 +146,9 @@ image_t bilinear_scaling(image_t input, double sx, double sy) {
             output.data[v][u] = alpha_y * interp_y1 + (1-alpha_y) * interp_y0;
         }
     }
+
+    free(x);
+    free(y);
 
     return output;
 }

@@ -17,8 +17,11 @@ void image_free(image_t image);
 
 image_t extract_segment(image_t image, uint32_t start_x, uint32_t start_y, uint16_t rows, uint16_t cols);
 
+double* get_scaled_coordinates(unsigned c, double sc);
+
 image_t bin2image(const char* filename);
 void save_to_pgm(const char* filename, image_t image);
+void save_to_bin(const char* filename, image_t image);
 
 image_t invert_image(image_t image);
 
