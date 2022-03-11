@@ -2,7 +2,7 @@
  * linker.h - Linker script mapping information
  *
  * Machine generated for CPU 'nios2_cpu' in SOPC Builder design 'dvs22_g6_system'
- * SOPC Builder design path: /home/dusan/projects/dvs-project/realization/hardware/dvs22_g6_system.sopcinfo
+ * SOPC Builder design path: ../../hardware/dvs22_g6_system.sopcinfo
  *
  * Generated: Thu Mar 10 12:29:55 CET 2022
  */

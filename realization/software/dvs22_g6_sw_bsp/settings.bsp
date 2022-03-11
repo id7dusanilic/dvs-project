@@ -4,9 +4,9 @@
         <BspVersion>default</BspVersion>
         <BspGeneratedTimeStamp>Mar 11, 2022 3:14:19 PM</BspGeneratedTimeStamp>
         <BspGeneratedUnixTimeStamp>1647008059701</BspGeneratedUnixTimeStamp>
-        <BspGeneratedLocation>/home/dusan/projects/dvs-project/realization/software/dvs22_g6_sw_bsp</BspGeneratedLocation>
+        <BspGeneratedLocation>../../software/dvs22_g6_sw_bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
-        <SopcDesignFile>/home/dusan/projects/dvs-project/realization/hardware/dvs22_g6_system.sopcinfo</SopcDesignFile>
+        <SopcDesignFile>../../hardware/dvs22_g6_system.sopcinfo</SopcDesignFile>
         <JdiFile>default</JdiFile>
         <Cpu>nios2_cpu</Cpu>
         <SchemaVersion>1.9</SchemaVersion>

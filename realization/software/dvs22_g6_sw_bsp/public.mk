@@ -86,7 +86,7 @@ ACDS_VERSION := 20.1
 
 # Qsys--generated SOPCINFO file. Required for resolving node instance ID's with 
 # design component names. 
-SOPCINFO_FILE := /home/dusan/projects/dvs-project/realization/hardware/dvs22_g6_system.sopcinfo
+SOPCINFO_FILE := ../../hardware/dvs22_g6_system.sopcinfo
 
 # Big-Endian operation. 
 # setting BIG_ENDIAN is false
