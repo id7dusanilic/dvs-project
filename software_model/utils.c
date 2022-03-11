@@ -119,31 +119,52 @@ float* get_scaled_coordinates(unsigned c, float sc) {
     return res;
 }
 
+uint32_t* get_scaled_coordinates_fixed(unsigned c, float sc, unsigned nint, unsigned nfrac) {
+    uint32_t num = c * sc;
+
+    uint32_t* res = malloc(sizeof(*res) * num);
+    for(int i=0; i<num; i++) {
+        res[i] = to_fixed_point(i / sc, nint, nfrac);
+    }
+    return res;
+}
+
+float from_fixed_point(uint32_t input, unsigned nfrac) {
+    return ((float) input) / (1<<nfrac);
+}
+
+uint32_t to_fixed_point(float input, unsigned nint, unsigned nfrac) {
+    return (uint32_t) (input * (1<<nfrac)) & ((1<<(nint+nfrac)) - 1);
+}
+
 image_t bilinear_scaling(image_t input, float sx, float sy) {
+    unsigned nfrac = 4, nint = 19;
     image_t output = image_alloc((uint32_t) (input.height * sy), (uint32_t) (input.width * sx));
 
-    float *x = get_scaled_coordinates(input.width, sx);
-    float *y = get_scaled_coordinates(input.height, sy);
-    float alpha_x, alpha_y;
+    uint32_t *x = get_scaled_coordinates_fixed(input.width, sx, nint, nfrac);
+    uint32_t *y = get_scaled_coordinates_fixed(input.height, sy, nint, nfrac);
 
+    uint32_t alpha_x, alpha_y;
     uint32_t floor_x, floor_y;
     uint32_t floor_x1, floor_y1;
-    float interp_y0, interp_y1;
+    uint32_t interp_y0, interp_y1;
+    uint64_t wide_output;
 
     for(int v=0; v<output.height; v++) {
-        alpha_y = y[v] - (int)y[v];
-        floor_y = y[v] - alpha_y;
+        alpha_y = y[v] & ((1<<nfrac) - 1);
+        floor_y = (y[v] - alpha_y) >> nfrac;
         floor_y1 = (floor_y >= input.height-1) ? floor_y : floor_y+1;
 
         for(int u=0; u<output.width; u++) {
-            alpha_x = x[u] - (int)x[u];
-            floor_x = x[u] - alpha_x;
+            alpha_x = x[u] & ((1<<nfrac) - 1);
+            floor_x = (x[u] - alpha_x) >> nfrac;
             floor_x1 = (floor_x >= input.width-1) ? floor_x : floor_x+1;
 
-            interp_y0 = alpha_x * input.data[floor_y][floor_x1] + (1-alpha_x) * input.data[floor_y][floor_x];
-            interp_y1 = alpha_x * input.data[floor_y1][floor_x1] + (1-alpha_x) * input.data[floor_y1][floor_x];
+            interp_y0 = alpha_x * input.data[floor_y][floor_x1] + ((1<<nfrac)-alpha_x) * input.data[floor_y][floor_x];
+            interp_y1 = alpha_x * input.data[floor_y1][floor_x1] + ((1<<nfrac)-alpha_x) * input.data[floor_y1][floor_x];
 
-            output.data[v][u] = alpha_y * interp_y1 + (1-alpha_y) * interp_y0;
+            wide_output = (alpha_y * interp_y1 + ((1<<nfrac)-alpha_y) * interp_y0);
+            output.data[v][u] = wide_output >> (2*nfrac);
         }
     }
 
