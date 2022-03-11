@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "utils.h"
 
@@ -12,6 +13,8 @@ int main(int argc, char** argv) {
 
     char* input_filename = argv[1];
     char* output_filename = argv[2];
+    char* output_extension;
+    sscanf(output_filename, "%*[^.].%ms", &output_extension);
 
     double sx, sy;
 
@@ -25,7 +28,16 @@ int main(int argc, char** argv) {
     image_t input_image = extract_segment(image_in, start_x, start_y, out_height, out_width);
 
     image_t output_image = bilinear_scaling(input_image, sx, sy);
-    save_to_pgm(output_filename, output_image);
+
+    if(!strcmp(output_extension, "pgm")) {
+        save_to_pgm(output_filename, output_image);
+    }
+    else if(!strcmp(output_extension, "bin")) {
+        save_to_bin(output_filename, output_image);
+    }
+    else {
+        printf("Warning, unknown extension: %s\n", output_extension);
+    }
 
     image_free(image_in);
     image_free(output_image);
