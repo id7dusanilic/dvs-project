@@ -109,26 +109,26 @@ image_t invert_image(image_t input) {
     return output;
 }
 
-double* get_scaled_coordinates(unsigned c, double sc) {
+float* get_scaled_coordinates(unsigned c, float sc) {
     uint32_t num = c * sc;
 
-    double* res = malloc(sizeof(*res) * num);
+    float* res = malloc(sizeof(*res) * num);
     for(int i=0; i<num; i++) {
         res[i] = i / sc;
     }
     return res;
 }
 
-image_t bilinear_scaling(image_t input, double sx, double sy) {
+image_t bilinear_scaling(image_t input, float sx, float sy) {
     image_t output = image_alloc((uint32_t) (input.height * sy), (uint32_t) (input.width * sx));
 
-    double *x = get_scaled_coordinates(input.width, sx);
-    double *y = get_scaled_coordinates(input.height, sy);
-    double alpha_x, alpha_y;
+    float *x = get_scaled_coordinates(input.width, sx);
+    float *y = get_scaled_coordinates(input.height, sy);
+    float alpha_x, alpha_y;
 
     uint32_t floor_x, floor_y;
     uint32_t floor_x1, floor_y1;
-    double interp_y0, interp_y1;
+    float interp_y0, interp_y1;
 
     for(int v=0; v<output.height; v++) {
         alpha_y = y[v] - (int)y[v];
