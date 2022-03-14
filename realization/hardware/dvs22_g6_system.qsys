@@ -9,12 +9,20 @@
    categories="System" />
  <parameter name="bonusData"><![CDATA[bonusData 
 {
-   element bilinear_scaling
+   element acc_bilinear_scaling
    {
       datum _sortIndex
       {
-         value = "6";
+         value = "8";
          type = "int";
+      }
+   }
+   element acc_bilinear_scaling.params
+   {
+      datum baseAddress
+      {
+         value = "67113120";
+         type = "String";
       }
    }
    element clk_50MHz
@@ -45,7 +53,7 @@
    {
       datum baseAddress
       {
-         value = "67113136";
+         value = "67113152";
          type = "String";
       }
    }
@@ -93,7 +101,7 @@
    {
       datum baseAddress
       {
-         value = "67113120";
+         value = "67113136";
          type = "String";
       }
    }
@@ -117,7 +125,7 @@
    {
       datum _sortIndex
       {
-         value = "7";
+         value = "6";
          type = "int";
       }
    }
@@ -133,7 +141,7 @@
    {
       datum _sortIndex
       {
-         value = "8";
+         value = "7";
          type = "int";
       }
    }
@@ -171,8 +179,8 @@
  <interface name="sdram" internal="sdram.wire" type="conduit" dir="end" />
  <interface name="sdram_clk" internal="pll.c1" type="clock" dir="start" />
  <module
-   name="bilinear_scaling"
-   kind="bilinear_scaling"
+   name="acc_bilinear_scaling"
+   kind="acc_bilinear_scaling"
    version="0.1"
    enabled="1" />
  <module name="clk_50MHz" kind="clock_source" version="20.1" enabled="1">
@@ -220,7 +228,7 @@
   <parameter name="dataAddrWidth" value="27" />
   <parameter name="dataMasterHighPerformanceAddrWidth" value="1" />
   <parameter name="dataMasterHighPerformanceMapParam" value="" />
-  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='bilinear_scaling.scaling_coeffs' start='0x0' end='0x2' type='bilinear_scaling.scaling_coeffs' /><slave name='sdram.s1' start='0x2000000' end='0x4000000' type='altera_avalon_new_sdram_controller.s1' /><slave name='nios2_cpu.debug_mem_slave' start='0x4000800' end='0x4001000' type='altera_nios2_gen2.debug_mem_slave' /><slave name='sgdma_out.csr' start='0x4001000' end='0x4001040' type='altera_avalon_sgdma.csr' /><slave name='sgdma_in.csr' start='0x4001040' end='0x4001080' type='altera_avalon_sgdma.csr' /><slave name='performance_counter.control_slave' start='0x4001080' end='0x40010A0' type='altera_avalon_performance_counter.control_slave' /><slave name='pll.pll_slave' start='0x40010A0' end='0x40010B0' type='altpll.pll_slave' /><slave name='jtag_uart.avalon_jtag_slave' start='0x40010B0' end='0x40010B8' type='altera_avalon_jtag_uart.avalon_jtag_slave' /></address-map>]]></parameter>
+  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='sdram.s1' start='0x2000000' end='0x4000000' type='altera_avalon_new_sdram_controller.s1' /><slave name='nios2_cpu.debug_mem_slave' start='0x4000800' end='0x4001000' type='altera_nios2_gen2.debug_mem_slave' /><slave name='sgdma_out.csr' start='0x4001000' end='0x4001040' type='altera_avalon_sgdma.csr' /><slave name='sgdma_in.csr' start='0x4001040' end='0x4001080' type='altera_avalon_sgdma.csr' /><slave name='performance_counter.control_slave' start='0x4001080' end='0x40010A0' type='altera_avalon_performance_counter.control_slave' /><slave name='acc_bilinear_scaling.params' start='0x40010A0' end='0x40010B0' type='acc_bilinear_scaling.params' /><slave name='pll.pll_slave' start='0x40010B0' end='0x40010C0' type='altpll.pll_slave' /><slave name='jtag_uart.avalon_jtag_slave' start='0x40010C0' end='0x40010C8' type='altera_avalon_jtag_uart.avalon_jtag_slave' /></address-map>]]></parameter>
   <parameter name="data_master_high_performance_paddr_base" value="0" />
   <parameter name="data_master_high_performance_paddr_size" value="0" />
   <parameter name="data_master_paddr_base" value="0" />
@@ -625,7 +633,7 @@
    start="nios2_cpu.data_master"
    end="jtag_uart.avalon_jtag_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x040010b0" />
+  <parameter name="baseAddress" value="0x040010c0" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -668,9 +676,18 @@
    kind="avalon"
    version="20.1"
    start="nios2_cpu.data_master"
-   end="pll.pll_slave">
+   end="acc_bilinear_scaling.params">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x040010a0" />
+  <parameter name="defaultConnection" value="false" />
+ </connection>
+ <connection
+   kind="avalon"
+   version="20.1"
+   start="nios2_cpu.data_master"
+   end="pll.pll_slave">
+  <parameter name="arbitrationPriority" value="1" />
+  <parameter name="baseAddress" value="0x040010b0" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -680,15 +697,6 @@
    end="sdram.s1">
   <parameter name="arbitrationPriority" value="1" />
   <parameter name="baseAddress" value="0x02000000" />
-  <parameter name="defaultConnection" value="false" />
- </connection>
- <connection
-   kind="avalon"
-   version="20.1"
-   start="nios2_cpu.data_master"
-   end="bilinear_scaling.scaling_coeffs">
-  <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x0000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -759,11 +767,11 @@
    kind="avalon_streaming"
    version="20.1"
    start="sgdma_in.out"
-   end="bilinear_scaling.input_data" />
+   end="acc_bilinear_scaling.input_data" />
  <connection
    kind="avalon_streaming"
    version="20.1"
-   start="bilinear_scaling.output_data"
+   start="acc_bilinear_scaling.output_data"
    end="sgdma_out.in" />
  <connection kind="clock" version="20.1" start="pll.c0" end="sdram.clk" />
  <connection kind="clock" version="20.1" start="pll.c0" end="nios2_cpu.clk" />
@@ -773,9 +781,13 @@
    version="20.1"
    start="pll.c0"
    end="performance_counter.clk" />
- <connection kind="clock" version="20.1" start="pll.c0" end="bilinear_scaling.clk" />
  <connection kind="clock" version="20.1" start="pll.c0" end="sgdma_in.clk" />
  <connection kind="clock" version="20.1" start="pll.c0" end="sgdma_out.clk" />
+ <connection
+   kind="clock"
+   version="20.1"
+   start="pll.c0"
+   end="acc_bilinear_scaling.clk" />
  <connection
    kind="clock"
    version="20.1"
@@ -831,17 +843,17 @@
    kind="reset"
    version="20.1"
    start="clk_50MHz.clk_reset"
-   end="bilinear_scaling.reset" />
- <connection
-   kind="reset"
-   version="20.1"
-   start="clk_50MHz.clk_reset"
    end="sgdma_in.reset" />
  <connection
    kind="reset"
    version="20.1"
    start="clk_50MHz.clk_reset"
    end="sgdma_out.reset" />
+ <connection
+   kind="reset"
+   version="20.1"
+   start="clk_50MHz.clk_reset"
+   end="acc_bilinear_scaling.reset" />
  <connection
    kind="reset"
    version="20.1"
@@ -867,11 +879,6 @@
    version="20.1"
    start="nios2_cpu.debug_reset_request"
    end="performance_counter.reset" />
- <connection
-   kind="reset"
-   version="20.1"
-   start="nios2_cpu.debug_reset_request"
-   end="bilinear_scaling.reset" />
  <connection
    kind="reset"
    version="20.1"

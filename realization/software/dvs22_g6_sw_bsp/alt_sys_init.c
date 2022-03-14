@@ -61,6 +61,7 @@
 #include "altera_nios2_gen2_irq.h"
 #include "altera_avalon_jtag_uart.h"
 #include "altera_avalon_performance_counter.h"
+#include "altera_avalon_sgdma.h"
 #include "altera_hostfs.h"
 
 /*
@@ -70,6 +71,8 @@
 ALTERA_NIOS2_GEN2_IRQ_INSTANCE ( NIOS2_CPU, nios2_cpu);
 ALTERA_AVALON_JTAG_UART_INSTANCE ( JTAG_UART, jtag_uart);
 ALTERA_AVALON_PERFORMANCE_COUNTER_INSTANCE ( PERFORMANCE_COUNTER, performance_counter);
+ALTERA_AVALON_SGDMA_INSTANCE ( SGDMA_IN, sgdma_in);
+ALTERA_AVALON_SGDMA_INSTANCE ( SGDMA_OUT, sgdma_out);
 ALTERA_HOSTFS_INSTANCE ( ALTERA_HOSTFS, altera_hostfs);
 
 /*
@@ -95,5 +98,7 @@ void alt_sys_init( void )
 {
     ALTERA_AVALON_JTAG_UART_INIT ( JTAG_UART, jtag_uart);
     ALTERA_AVALON_PERFORMANCE_COUNTER_INIT ( PERFORMANCE_COUNTER, performance_counter);
+    ALTERA_AVALON_SGDMA_INIT ( SGDMA_IN, sgdma_in);
+    ALTERA_AVALON_SGDMA_INIT ( SGDMA_OUT, sgdma_out);
     ALTERA_HOSTFS_INIT ( ALTERA_HOSTFS, altera_hostfs);
 }

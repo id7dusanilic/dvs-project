@@ -3,6 +3,7 @@
 	<name>dvs22_g6_sw</name>
 	<comment></comment>
 	<projects>
+		<project>dvs22_g6_sw_bsp</project>
 	</projects>
 	<buildSpec>
 		<buildCommand>

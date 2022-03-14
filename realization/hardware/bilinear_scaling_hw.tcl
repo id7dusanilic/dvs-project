@@ -16,15 +16,15 @@ package require -exact qsys 16.1
 
 
 # 
-# module bilinear_scaling
+# module acc_bilinear_scaling
 # 
 set_module_property DESCRIPTION ""
-set_module_property NAME bilinear_scaling
+set_module_property NAME acc_bilinear_scaling
 set_module_property VERSION 0.1
 set_module_property INTERNAL false
 set_module_property OPAQUE_ADDRESS_MAP true
 set_module_property AUTHOR ""
-set_module_property DISPLAY_NAME bilinear_scaling
+set_module_property DISPLAY_NAME acc_bilinear_scaling
 set_module_property INSTANTIATE_IN_SYSTEM_MODULE true
 set_module_property EDITABLE true
 set_module_property REPORT_TO_TALKBACK false
@@ -36,10 +36,11 @@ set_module_property REPORT_HIERARCHY false
 # file sets
 # 
 add_fileset QUARTUS_SYNTH QUARTUS_SYNTH "" ""
-set_fileset_property QUARTUS_SYNTH TOP_LEVEL new_component
+set_fileset_property QUARTUS_SYNTH TOP_LEVEL acc_bilinear_scaling
 set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
-add_fileset_file new_component.vhd VHDL PATH new_component.vhd TOP_LEVEL_FILE
+add_fileset_file acc_bilinear_scaling.vhd VHDL PATH acc_bilinear_scaling.vhd
+add_fileset_file RAM.vhd VHDL PATH RAM.vhd
 
 
 # 
@@ -50,58 +51,6 @@ add_fileset_file new_component.vhd VHDL PATH new_component.vhd TOP_LEVEL_FILE
 # 
 # display items
 # 
-
-
-# 
-# connection point scaling_coeffs
-# 
-add_interface scaling_coeffs avalon end
-set_interface_property scaling_coeffs addressUnits SYMBOLS
-set_interface_property scaling_coeffs associatedClock clk
-set_interface_property scaling_coeffs associatedReset reset
-set_interface_property scaling_coeffs bitsPerSymbol 8
-set_interface_property scaling_coeffs burstOnBurstBoundariesOnly false
-set_interface_property scaling_coeffs burstcountUnits WORDS
-set_interface_property scaling_coeffs explicitAddressSpan 0
-set_interface_property scaling_coeffs holdTime 0
-set_interface_property scaling_coeffs linewrapBursts false
-set_interface_property scaling_coeffs maximumPendingReadTransactions 0
-set_interface_property scaling_coeffs maximumPendingWriteTransactions 0
-set_interface_property scaling_coeffs readLatency 0
-set_interface_property scaling_coeffs readWaitTime 1
-set_interface_property scaling_coeffs setupTime 0
-set_interface_property scaling_coeffs timingUnits Cycles
-set_interface_property scaling_coeffs writeWaitTime 0
-set_interface_property scaling_coeffs ENABLED true
-set_interface_property scaling_coeffs EXPORT_OF ""
-set_interface_property scaling_coeffs PORT_NAME_MAP ""
-set_interface_property scaling_coeffs CMSIS_SVD_VARIABLES ""
-set_interface_property scaling_coeffs SVD_ADDRESS_GROUP ""
-
-add_interface_port scaling_coeffs scaling_coeffs_address address Input 1
-add_interface_port scaling_coeffs scaling_coeffs_read read Input 1
-add_interface_port scaling_coeffs scaling_coeffs_write write Input 1
-add_interface_port scaling_coeffs scaling_coeffs_readdata readdata Output 8
-add_interface_port scaling_coeffs scaling_coeffs_writedata writedata Input 8
-add_interface_port scaling_coeffs scaling_coeffs_waitrequest waitrequest Output 1
-set_interface_assignment scaling_coeffs embeddedsw.configuration.isFlash 0
-set_interface_assignment scaling_coeffs embeddedsw.configuration.isMemoryDevice 0
-set_interface_assignment scaling_coeffs embeddedsw.configuration.isNonVolatileStorage 0
-set_interface_assignment scaling_coeffs embeddedsw.configuration.isPrintableDevice 0
-
-
-# 
-# connection point clk
-# 
-add_interface clk clock end
-set_interface_property clk clockRate 0
-set_interface_property clk ENABLED true
-set_interface_property clk EXPORT_OF ""
-set_interface_property clk PORT_NAME_MAP ""
-set_interface_property clk CMSIS_SVD_VARIABLES ""
-set_interface_property clk SVD_ADDRESS_GROUP ""
-
-add_interface_port clk clk clk Input 1
 
 
 # 
@@ -148,6 +97,7 @@ add_interface_port input_data asi_input_data_eop endofpacket Input 1
 # 
 add_interface output_data avalon_streaming start
 set_interface_property output_data associatedClock clk
+set_interface_property output_data associatedReset reset
 set_interface_property output_data dataBitsPerSymbol 8
 set_interface_property output_data errorDescriptor ""
 set_interface_property output_data firstSymbolInHighOrderBits true
@@ -164,4 +114,56 @@ add_interface_port output_data aso_output_data_endofpacket endofpacket Output 1
 add_interface_port output_data aso_output_data_startofpacket startofpacket Output 1
 add_interface_port output_data aso_output_data_valid valid Output 1
 add_interface_port output_data aso_output_data_ready ready Input 1
+
+
+# 
+# connection point params
+# 
+add_interface params avalon end
+set_interface_property params addressUnits WORDS
+set_interface_property params associatedClock clk
+set_interface_property params associatedReset reset
+set_interface_property params bitsPerSymbol 8
+set_interface_property params burstOnBurstBoundariesOnly false
+set_interface_property params burstcountUnits WORDS
+set_interface_property params explicitAddressSpan 0
+set_interface_property params holdTime 0
+set_interface_property params linewrapBursts false
+set_interface_property params maximumPendingReadTransactions 0
+set_interface_property params maximumPendingWriteTransactions 0
+set_interface_property params readLatency 0
+set_interface_property params readWaitTime 1
+set_interface_property params setupTime 0
+set_interface_property params timingUnits Cycles
+set_interface_property params writeWaitTime 0
+set_interface_property params ENABLED true
+set_interface_property params EXPORT_OF ""
+set_interface_property params PORT_NAME_MAP ""
+set_interface_property params CMSIS_SVD_VARIABLES ""
+set_interface_property params SVD_ADDRESS_GROUP ""
+
+add_interface_port params params_address address Input 3
+add_interface_port params params_read read Input 1
+add_interface_port params params_write write Input 1
+add_interface_port params params_readdata readdata Output 16
+add_interface_port params params_writedata writedata Input 16
+add_interface_port params params_waitrequest waitrequest Output 1
+set_interface_assignment params embeddedsw.configuration.isFlash 0
+set_interface_assignment params embeddedsw.configuration.isMemoryDevice 0
+set_interface_assignment params embeddedsw.configuration.isNonVolatileStorage 0
+set_interface_assignment params embeddedsw.configuration.isPrintableDevice 0
+
+
+# 
+# connection point clk
+# 
+add_interface clk clock end
+set_interface_property clk clockRate 0
+set_interface_property clk ENABLED true
+set_interface_property clk EXPORT_OF ""
+set_interface_property clk PORT_NAME_MAP ""
+set_interface_property clk CMSIS_SVD_VARIABLES ""
+set_interface_property clk SVD_ADDRESS_GROUP ""
+
+add_interface_port clk clk clk Input 1
 
