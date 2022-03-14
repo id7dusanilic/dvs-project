@@ -75,7 +75,7 @@ void save_to_pgm(const char* filename, image_t image) {
     FILE* file = fopen(filename, "w");
     assert(file != NULL);
 
-    fprintf(file, "P5 %ud %ud %d ", image.width, image.height, 255);
+    fprintf(file, "P5 %u %u %d ", image.width, image.height, 255);
     for(int i=0; i<image.height; i++) {
         fwrite(image.data[i], sizeof(**image.data), image.width, file);
     }
@@ -122,9 +122,18 @@ float* get_scaled_coordinates(unsigned c, float sc) {
 uint32_t* get_scaled_coordinates_fixed(unsigned c, float sc, unsigned nint, unsigned nfrac) {
     uint32_t num = c * sc;
 
+    int nfrac_coeff = 13;
+    int nint_coeff = 3;
+    uint32_t increment = to_fixed_point(1/sc, nint_coeff, nfrac_coeff);
+    uint32_t sum = 0;
+
     uint32_t* res = malloc(sizeof(*res) * num);
     for(int i=0; i<num; i++) {
-        res[i] = to_fixed_point(i / sc, nint, nfrac);
+        if(nfrac_coeff > nfrac)
+            res[i] = sum >> (nfrac_coeff - nfrac);
+        else
+            res[i] = sum >> (nfrac - nfrac_coeff);
+        sum += increment;
     }
     return res;
 }
