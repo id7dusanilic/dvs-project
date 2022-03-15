@@ -146,7 +146,7 @@ uint32_t to_fixed_point(float input, unsigned nint, unsigned nfrac) {
     return (uint32_t) (input * (1<<nfrac)) & ((1<<(nint+nfrac)) - 1);
 }
 
-image_t bilinear_scaling(image_t input, float sx, float sy) {
+image_t bilinear_scaling_sw(image_t input, float sx, float sy) {
     unsigned nfrac = 4, nint = 19;
     image_t output = image_alloc((uint32_t) (input.height * sy), (uint32_t) (input.width * sx));
 

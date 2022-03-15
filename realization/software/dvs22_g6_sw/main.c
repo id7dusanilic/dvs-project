@@ -32,8 +32,8 @@ int main() {
         printf("Enter input filename: ");
         scanf("%s", input_filename + ALTERA_HOSTFS_NAME_LEN);
         if (input_filename[ALTERA_HOSTFS_NAME_LEN] != SAME_AS_BEFORE) {
-        	if (!image_in.data) image_free(image_in);
-        	image_in = bin2image(input_filename);
+            if (!image_in.data) image_free(image_in);
+            image_in = bin2image(input_filename);
             printf("Image %s loaded.\n", input_filename);
         }
         printf("\nEnter output filename: ");
@@ -43,17 +43,17 @@ int main() {
         printf("\nEnter scaling factors: ");
         scanf("%f %f", &sx, &sy);
 
-        out_width = dr_x - ul_x + 1;
-        out_height = dr_y - ul_y + 1;
+        seg_width = dr_x - ul_x + 1;
+        seg_height = dr_y - ul_y + 1;
 
-        image_t input_image = extract_segment(image_in, ul_x, ul_y, out_height, out_width);
+        image_t input_image = extract_segment(image_in, ul_x, ul_y, seg_height, seg_width);
         printf("Extracted segment.\n");
 
         PERF_RESET(PERFORMANCE_COUNTER_BASE);
         PERF_START_MEASURING(PERFORMANCE_COUNTER_BASE);
 
         PERF_BEGIN(PERFORMANCE_COUNTER_BASE, 1);
-        image_t output_image = bilinear_scaling(input_image, sx, sy);
+        image_t output_image = bilinear_scaling_sw(input_image, sx, sy);
         PERF_END(PERFORMANCE_COUNTER_BASE, 1);
         printf("Image scaled.\n\n");
 
@@ -61,10 +61,10 @@ int main() {
         printf("\nImage saved.\n");
 
         perf_print_formatted_report(
-        		(void *)PERFORMANCE_COUNTER_BASE,
-      		    alt_get_cpu_freq(),
-      		    1,
-				"processing_sw");
+                (void *)PERFORMANCE_COUNTER_BASE,
+                alt_get_cpu_freq(),
+                1,
+                "processing_sw");
 
         image_free(output_image);
         free(input_image.data);

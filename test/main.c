@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     uint32_t start_x = 100, start_y = 100;
     image_t input_image = extract_segment(image_in, start_x, start_y, out_height, out_width);
 
-    image_t output_image = bilinear_scaling(input_image, sx, sy);
+    image_t output_image = bilinear_scaling_sw(input_image, sx, sy);
 
     if(!strcmp(output_extension, "pgm")) {
         save_to_pgm(output_filename, output_image);

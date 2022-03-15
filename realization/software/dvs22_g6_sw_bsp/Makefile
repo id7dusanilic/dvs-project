@@ -225,10 +225,10 @@ altera_avalon_performance_counter_driver_C_LIB_SRCS := \
 	$(altera_avalon_performance_counter_driver_SRCS_ROOT)/src/altera_avalon_performance_counter.c \
 	$(altera_avalon_performance_counter_driver_SRCS_ROOT)/src/perf_print_formatted_report.c
 
-# altera_avalon_sgdma_driver sources root
+# altera_avalon_sgdma_driver sources root 
 altera_avalon_sgdma_driver_SRCS_ROOT := drivers
 
-# altera_avalon_sgdma_driver sources
+# altera_avalon_sgdma_driver sources 
 altera_avalon_sgdma_driver_C_LIB_SRCS := \
 	$(altera_avalon_sgdma_driver_SRCS_ROOT)/src/altera_avalon_sgdma.c
 

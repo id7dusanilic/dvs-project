@@ -1,7 +1,7 @@
 # memory.gdb - GDB memory region definitions
 #
 # Machine generated for CPU 'nios2_cpu' in SOPC Builder design 'dvs22_g6_system'
-# SOPC Builder design path: ../hardware/dvs22_g6_system.sopcinfo
+# SOPC Builder design path: ../../hardware/dvs22_g6_system.sopcinfo
 #
 # Generated: Thu Mar 10 12:29:55 CET 2022
 

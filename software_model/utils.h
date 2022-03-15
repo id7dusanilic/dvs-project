@@ -30,6 +30,6 @@ void save_to_bin(const char* filename, image_t image);
 
 image_t invert_image(image_t image);
 
-image_t bilinear_scaling(image_t input, float sx, float sy);
+image_t bilinear_scaling_sw(image_t input, float sx, float sy);
 
 #endif
