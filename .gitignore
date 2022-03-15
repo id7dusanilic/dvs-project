@@ -55,3 +55,16 @@ dkms.conf
 
 # Vim buffers
 *.sw*
+
+# Misc
+.qsys_edit/
+.metadata/
+db/
+incremental_db/
+output_files/
+simulation/
+*_system/
+*.qws
+*.sopcinfo
+*.objdump
+.force_relink
