@@ -9,7 +9,7 @@ end entity acc_bilinear_scaling_TB;
 
 architecture Test of acc_bilinear_scaling_TB is
 signal clk : std_logic := '0';
-signal reset : std_logic := '0';
+signal reset : std_logic := '1';
 signal asi_input_data_data : std_logic_vector (7 downto 0) := (others => '0');
 signal asi_input_data_valid : std_logic := '0';
 signal asi_input_data_ready : std_logic := '0';
@@ -20,6 +20,8 @@ signal aso_output_data_endofpacket : std_logic := '0';
 signal aso_output_data_startofpacket : std_logic := '0';
 signal aso_output_data_valid : std_logic := '0';
 signal aso_output_data_ready : std_logic := '0';
+signal aso_output_data_data_err : std_logic := '0';
+signal aso_output_data_last_err : std_logic := '0';
 signal params_address : std_logic_vector(2 downto 0)  := (others => '0');
 signal params_read : std_logic := '0';
 signal params_write : std_logic := '0';
@@ -52,6 +54,22 @@ DUT_i0: entity work.acc_bilinear_scaling
         params_waitrequest => params_waitrequest
     );
 
+AVS_source_0 : entity work.COM_AXIS_source
+    generic map (
+        G_PACKET_SIZE       => 8,
+        G_VALID_PROB        => 0.5,
+        G_FILE_TEST_VECTORS => "input.txt"
+    )
+    port map(
+        clk => clk,
+        reset => reset,
+        data => asi_input_data_data,
+        valid => asi_input_data_valid,
+        ready => asi_input_data_ready,
+        last => asi_input_data_eop
+    );
+
 clk <= not clk after C_TCLK/2;
+reset <= '0' after 3*C_TCLK/2;
 
 end architecture Test;
