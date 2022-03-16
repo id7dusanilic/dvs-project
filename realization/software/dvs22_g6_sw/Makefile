@@ -88,6 +88,7 @@ ELF := dvs22_g6_sw.elf
 # Paths to C, C++, and assembly source files.
 C_SRCS += ../../../software_model/utils.c
 C_SRCS += main.c
+C_SRCS += bilinear_scaling_hw.c
 CXX_SRCS :=
 ASM_SRCS :=
 

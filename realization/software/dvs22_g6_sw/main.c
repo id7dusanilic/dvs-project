@@ -1,15 +1,15 @@
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
-#include "system.h"
 #include "altera_avalon_performance_counter.h"
+#include "system.h"
 
 #include "software_model/utils.h"
 
-#define MAX_STRLEN (255)            /* Maximum string length, used for static memory allocation. */
 #define ALTERA_HOSTFS_NAME_LEN (10) /* Length of ALTERA_HOSTFS_NAME"/". */
+#define MAX_STRLEN (255)            /* Maximum string length, used for static memory allocation. */
 #define SAME_AS_BEFORE '@'          /* Character used to signal that the same image is being used from previous input. */
 #define SAVE_2_PGM (1)              /* If this is enabled (!= 0) the image will be saved in pgm instead of bin format. */
 
