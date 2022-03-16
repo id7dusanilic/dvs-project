@@ -6,6 +6,7 @@
 #include "altera_avalon_sgdma_descriptor.h"
 #include "altera_avalon_sgdma.h"
 #include "altera_avalon_sgdma_regs.h"
+#include "io.h"
 
 #include "software_model/utils.h"
 
@@ -63,7 +64,15 @@ void create_receive_descriptors(alt_sgdma_descriptor* descriptors, image_t image
 }
 
 
-image_t bilinear_scaling_hw(image_t input, float sx, float sy, alt_sgdma_dev* sgdma_in, alt_sgdma_dev* sgdma_out) {
+image_t bilinear_scaling_hw(
+            image_t input,
+            float sx,
+            float sy,
+            alt_sgdma_dev* sgdma_in,
+            alt_sgdma_dev* sgdma_out,
+            uint16_t* tx_done,
+            uint16_t* rx_done) {
+
     void* transmit_alloc;
     void* receive_alloc;
 
@@ -76,10 +85,11 @@ image_t bilinear_scaling_hw(image_t input, float sx, float sy, alt_sgdma_dev* sg
 
     /* Create SGDMA descriptors. */
     create_transmit_descriptors(transmit_descriptors, input);
-    /* create_receive_descriptors(receive_descriptors, output); */
+    create_receive_descriptors(receive_descriptors, output);
 
     /* Write params to the peripheral. */
     /* TODO */
+    /* IOWR_16DIRECT(ACC_BILINEAR_FUNCTION_BASE, PARAM_ADDRESS, PARAM); */
 
     /* Start SGDMAs. */
     if(alt_avalon_sgdma_do_async_transfer(sgdma_in, &transmit_descriptors[0]) != 0)
@@ -92,7 +102,14 @@ image_t bilinear_scaling_hw(image_t input, float sx, float sy, alt_sgdma_dev* sg
     }
 
     /* Wait for SGDMA interrupts to fire. */
-    /* TODO */
+    while(*tx_done == 0x0000);
+    printf("Transmit SGDMA completed.\n");
+    while(*rx_done == 0x0000);
+    printf("Receive SGDMA completed.\n");
+
+    /* Reset flags. */
+    *rx_done = 0x0000;
+    *tx_done = 0x0000;
 
     /* Stop SGDMAs. */
     alt_avalon_sgdma_stop(sgdma_in);
