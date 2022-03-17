@@ -27,13 +27,11 @@ architecture Behavioral of RAM is
     signal r_data : std_logic_vector(G_DATA_WIDTH - 1 downto 0);
 begin
 
-    -- 2 clock cycle read latency with improved clock-to-out timing
     READ_PROCESS : process(clk) is
     begin
         if rising_edge(clk) then
             if (rd = '1') then
-                r_data <= memory(to_integer(unsigned(rd_addr)));
-                data_out <=  r_data;
+                data_out <= memory(to_integer(unsigned(rd_addr)));
             end if;
         end if;
     end process;
