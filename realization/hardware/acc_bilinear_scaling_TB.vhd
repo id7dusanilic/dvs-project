@@ -1,4 +1,3 @@
-
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
@@ -54,7 +53,7 @@ DUT_i0: entity work.acc_bilinear_scaling
         params_waitrequest => params_waitrequest
     );
 
-AVS_source_0 : entity work.COM_AXIS_source
+AVS_SOURCE_i0 : entity work.avs_source
     generic map (
         G_PACKET_SIZE       => 8,
         G_VALID_PROB        => 0.5,
