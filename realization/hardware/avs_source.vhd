@@ -5,7 +5,7 @@ use IEEE.MATH_REAL.ALL;
 use STD.TEXTIO.ALL;
 use IEEE.STD_LOGIC_TEXTIO.all;
 
-entity COM_AXIS_source is
+entity avs_source is
     generic (
         G_PACKET_SIZE       : natural := 4;
         G_VALID_PROB        : real := 0.5;
@@ -20,9 +20,9 @@ entity COM_AXIS_source is
         valid   : out std_logic;
         last    : out std_logic
     );
-end COM_AXIS_source;
+end avs_source;
 
-architecture Test of COM_AXIS_source is
+architecture Test of avs_source is
     signal c_packet_data : natural range 0 to G_PACKET_SIZE-1;
     signal r_rand_valid  : std_logic;
     signal r_done_transmitting : std_logic;

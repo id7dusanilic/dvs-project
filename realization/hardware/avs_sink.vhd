@@ -5,7 +5,7 @@ use IEEE.MATH_REAL.ALL;
 use STD.TEXTIO.ALL;
 use IEEE.STD_LOGIC_TEXTIO.all;
 
-entity COM_AXIS_sink is
+entity avs_sink is
     generic (
         G_PACKET_SIZE       : natural := 4;
         G_READY_PROB        : real := 0.5;
@@ -23,9 +23,9 @@ entity COM_AXIS_sink is
         error_in_data   : out std_logic;
         error_in_last   : out std_logic
     );
-end COM_AXIS_sink;
+end avs_sink;
 
-architecture Test of COM_AXIS_sink is
+architecture Test of avs_sink is
     signal c_packet_data : natural range 0 to G_PACKET_SIZE-1;
     signal r_expected_data : std_logic_vector(data'range);
     signal r_rand_ready  : std_logic;
