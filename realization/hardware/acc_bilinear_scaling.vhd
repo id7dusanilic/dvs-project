@@ -32,20 +32,27 @@ signal r_sx         : std_logic_vector(C_SCALE_WIDTH-1 downto 0);
 signal r_sy         : std_logic_vector(C_SCALE_WIDTH-1 downto 0);
 signal r_sx_inv     : std_logic_vector(C_SCALE_INV_WIDTH-1 downto 0) := (0 => '1', others => '0');
 signal r_sy_inv     : std_logic_vector(C_SCALE_INV_WIDTH-1 downto 0) := (0 => '1', others => '0');
-signal r_width      : std_logic_vector(C_DIM_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(4, C_DIM_WIDTH));
-signal r_height     : std_logic_vector(C_DIM_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(4, C_DIM_WIDTH));
+signal r_width      : std_logic_vector(C_DIM_WIDTH-1 downto 0);
+signal r_height     : std_logic_vector(C_DIM_WIDTH-1 downto 0);
+
+signal w_width      : integer range 0 to 2**C_DIM_WIDTH;
+signal w_height     : integer range 0 to 2**C_DIM_WIDTH;
 
 type ram_signal_t is array (integer range 0 to 1) of std_logic;
 type ram_data_t is array (integer range 0 to 1) of std_logic_vector (C_DATA_WIDTH-1 downto 0);
 type ram_addr_t is array (integer range 0 to 1) of std_logic_vector (C_ADDR_WIDTH-1 downto 0);
+type ram_counter_t is array (integer range 0 to 1) of integer range 0 to C_RAM_DEPTH-1;
 
-signal r_writing_ram : integer range 0 to 1 := 0; -- The RAM that is being written to
+signal r_ram_sel : std_logic := '0'; -- The RAM that is being written to
+signal w_ram_sel : integer range 0 to 1;
 
 signal r_rd         : std_logic := '0';
-signal r_wr_array   : ram_signal_t := (others => '0');
-signal r_wr_addr_array    : ram_addr_t := (others => (others => '0'));
+signal w_wr_array   : ram_signal_t := (others => '0');
+signal c_column    : ram_counter_t := (others => 0);
+signal w_wr_addr_array    : ram_addr_t := (others => (others => '0'));
 
-signal r_rd_addr    : std_logic_vector (C_ADDR_WIDTH-1 downto 0) := (others => '0');
+signal c_rd_addr    : integer range 0 to C_RAM_DEPTH-1 := 0;
+signal w_rd_addr    : std_logic_vector (C_ADDR_WIDTH-1 downto 0) := (others => '0');
 
 signal r_data_in    : std_logic_vector (C_DATA_WIDTH-1 downto 0) := (others => '0');
 signal r_data_out_array   : ram_data_t := (others => (others => '0'));
@@ -53,6 +60,12 @@ signal r_data_out_array   : ram_data_t := (others => (others => '0'));
 signal w_asi_input_data_ready : std_logic := '0';
 
 begin
+
+w_width <= to_integer(unsigned(r_width));
+w_height <= to_integer(unsigned(r_height));
+
+w_ram_sel <= 1 when r_ram_sel='1' else 0;
+
 RAM_i0: entity work.RAM
     generic map (
         G_DATA_WIDTH => C_DATA_WIDTH,
@@ -61,9 +74,9 @@ RAM_i0: entity work.RAM
     port map (
         clk => clk,
         rd => r_rd,
-        wr => r_wr_array(0),
-        rd_addr => r_rd_addr,
-        wr_addr => r_wr_addr_array(0),
+        wr => w_wr_array(0),
+        rd_addr => w_rd_addr,
+        wr_addr => w_wr_addr_array(0),
         data_in => r_data_in,
         data_out => r_data_out_array(0)
     );
@@ -76,57 +89,64 @@ RAM_i1: entity work.RAM
     port map (
         clk => clk,
         rd => r_rd,
-        wr => r_wr_array(1),
-        rd_addr => r_rd_addr,
-        wr_addr => r_wr_addr_array(1),
+        wr => w_wr_array(1),
+        rd_addr => w_rd_addr,
+        wr_addr => w_wr_addr_array(1),
         data_in => r_data_in,
         data_out => r_data_out_array(1)
     );
 
+w_wr_addr_array(0) <= std_logic_vector(to_unsigned(c_column(0), C_ADDR_WIDTH));
+w_wr_addr_array(1) <= std_logic_vector(to_unsigned(c_column(1), C_ADDR_WIDTH));
+
 w_asi_input_data_ready <= '1';
 asi_input_data_ready <= w_asi_input_data_ready;
 
-r_rd <= '1' when (r_wr_addr_array(0)>r_rd_addr and r_wr_addr_array(1)>r_rd_addr) else '0';
+r_rd <= '1' when (c_column(0)>c_rd_addr and c_column(1)>c_rd_addr) else '0';
 
 DATA_READ: process (clk) is
 begin
     if rising_edge(clk) then
         if r_rd='1' then
-            r_rd_addr <= std_logic_vector(unsigned(r_rd_addr) + 1);
+            c_rd_addr <= c_rd_addr + 1;
+            if c_rd_addr=w_width-1 then
+                c_rd_addr <= 0;
+            end if;
         end if;
     end if;
 end process DATA_READ;
 
-DATA_LOAD: process (clk) is
-variable v_write_en : std_logic := '0';
+COUNT: process (clk) is
 begin
     if rising_edge(clk) then
-        r_wr_array(0) <= '0';
-        r_wr_array(1) <= '0';
-        if w_asi_input_data_ready='1' and asi_input_data_valid='1' then
-            r_data_in <= asi_input_data_data;
-            v_write_en := '1';
-        else
-            v_write_en := '0';
-        end if;
-        r_wr_array(r_writing_ram) <= v_write_en;
-
-        if r_wr_array(r_writing_ram)='1' then
-            r_wr_addr_array(r_writing_ram) <= std_logic_vector(unsigned(r_wr_addr_array(r_writing_ram)) + 1);
-            if (unsigned(r_wr_addr_array(r_writing_ram))) = (unsigned(r_width))-1 then
-                r_writing_ram <= 1 - r_writing_ram;
-                r_wr_array(r_writing_ram) <= '0';
-                r_wr_array(1-r_writing_ram) <= v_write_en;
-                r_wr_addr_array(1-r_writing_ram) <= (others => '0');
+        if w_wr_array(w_ram_sel)='1' then
+            c_column(w_ram_sel) <= c_column(w_ram_sel) + 1;
+            if c_column(w_ram_sel) = w_width-1 then
+                c_column(w_ram_sel) <= 0;
             end if;
         end if;
-
         if reset='1' then
-            r_wr_addr_array(0) <= (others => '0');
-            r_wr_addr_array(1) <= (others => '0');
+            c_column(0) <= 0;
+            c_column(1) <= 0;
         end if;
     end if;
-end process DATA_LOAD;
+end process COUNT;
+
+RAM_SELECT: process (clk) is
+begin
+    if rising_edge(clk) then
+        if c_column(w_ram_sel) = w_width-1 and w_wr_array(w_ram_sel)='1' then
+            r_ram_sel <= not r_ram_sel;
+        end if;
+        if reset='1' then
+            r_ram_sel <= '0';
+        end if;
+    end if;
+end process RAM_SELECT;
+
+r_data_in <= asi_input_data_data;
+w_wr_array(0) <= (asi_input_data_valid and w_asi_input_data_ready) and not r_ram_sel;
+w_wr_array(1) <= (asi_input_data_valid and w_asi_input_data_ready) and r_ram_sel;
 
 -- TODO: Auto-generated HDL template
 
