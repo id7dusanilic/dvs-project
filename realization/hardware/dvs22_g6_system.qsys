@@ -21,7 +21,7 @@
    {
       datum baseAddress
       {
-         value = "67113120";
+         value = "67113232";
          type = "String";
       }
    }
@@ -53,7 +53,7 @@
    {
       datum baseAddress
       {
-         value = "67113152";
+         value = "67113248";
          type = "String";
       }
    }
@@ -85,7 +85,7 @@
    {
       datum baseAddress
       {
-         value = "67113088";
+         value = "67112960";
          type = "String";
       }
    }
@@ -101,7 +101,7 @@
    {
       datum baseAddress
       {
-         value = "67113136";
+         value = "67113216";
          type = "String";
       }
    }
@@ -133,7 +133,7 @@
    {
       datum baseAddress
       {
-         value = "67113024";
+         value = "67113152";
          type = "String";
       }
    }
@@ -149,7 +149,7 @@
    {
       datum baseAddress
       {
-         value = "67112960";
+         value = "67113088";
          type = "String";
       }
    }
@@ -228,7 +228,7 @@
   <parameter name="dataAddrWidth" value="27" />
   <parameter name="dataMasterHighPerformanceAddrWidth" value="1" />
   <parameter name="dataMasterHighPerformanceMapParam" value="" />
-  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='sdram.s1' start='0x2000000' end='0x4000000' type='altera_avalon_new_sdram_controller.s1' /><slave name='nios2_cpu.debug_mem_slave' start='0x4000800' end='0x4001000' type='altera_nios2_gen2.debug_mem_slave' /><slave name='sgdma_out.csr' start='0x4001000' end='0x4001040' type='altera_avalon_sgdma.csr' /><slave name='sgdma_in.csr' start='0x4001040' end='0x4001080' type='altera_avalon_sgdma.csr' /><slave name='performance_counter.control_slave' start='0x4001080' end='0x40010A0' type='altera_avalon_performance_counter.control_slave' /><slave name='acc_bilinear_scaling.params' start='0x40010A0' end='0x40010B0' type='acc_bilinear_scaling.params' /><slave name='pll.pll_slave' start='0x40010B0' end='0x40010C0' type='altpll.pll_slave' /><slave name='jtag_uart.avalon_jtag_slave' start='0x40010C0' end='0x40010C8' type='altera_avalon_jtag_uart.avalon_jtag_slave' /></address-map>]]></parameter>
+  <parameter name="dataSlaveMapParam"><![CDATA[<address-map><slave name='sdram.s1' start='0x2000000' end='0x4000000' type='altera_avalon_new_sdram_controller.s1' /><slave name='nios2_cpu.debug_mem_slave' start='0x4000800' end='0x4001000' type='altera_nios2_gen2.debug_mem_slave' /><slave name='performance_counter.control_slave' start='0x4001000' end='0x4001080' type='altera_avalon_performance_counter.control_slave' /><slave name='sgdma_out.csr' start='0x4001080' end='0x40010C0' type='altera_avalon_sgdma.csr' /><slave name='sgdma_in.csr' start='0x40010C0' end='0x4001100' type='altera_avalon_sgdma.csr' /><slave name='pll.pll_slave' start='0x4001100' end='0x4001110' type='altpll.pll_slave' /><slave name='acc_bilinear_scaling.params' start='0x4001110' end='0x4001120' type='acc_bilinear_scaling.params' /><slave name='jtag_uart.avalon_jtag_slave' start='0x4001120' end='0x4001128' type='altera_avalon_jtag_uart.avalon_jtag_slave' /></address-map>]]></parameter>
   <parameter name="data_master_high_performance_paddr_base" value="0" />
   <parameter name="data_master_high_performance_paddr_size" value="0" />
   <parameter name="data_master_paddr_base" value="0" />
@@ -391,7 +391,7 @@
    kind="altera_avalon_performance_counter"
    version="20.1"
    enabled="1">
-  <parameter name="numberOfSections" value="1" />
+  <parameter name="numberOfSections" value="4" />
  </module>
  <module name="pll" kind="altpll" version="20.1" enabled="1">
   <parameter name="AUTO_DEVICE_FAMILY" value="Cyclone IV E" />
@@ -633,7 +633,7 @@
    start="nios2_cpu.data_master"
    end="jtag_uart.avalon_jtag_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x040010c0" />
+  <parameter name="baseAddress" value="0x04001120" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -642,7 +642,7 @@
    start="nios2_cpu.data_master"
    end="performance_counter.control_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x04001080" />
+  <parameter name="baseAddress" value="0x04001000" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -651,7 +651,7 @@
    start="nios2_cpu.data_master"
    end="sgdma_in.csr">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x04001040" />
+  <parameter name="baseAddress" value="0x040010c0" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -660,7 +660,7 @@
    start="nios2_cpu.data_master"
    end="sgdma_out.csr">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x04001000" />
+  <parameter name="baseAddress" value="0x04001080" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -678,7 +678,7 @@
    start="nios2_cpu.data_master"
    end="acc_bilinear_scaling.params">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x040010a0" />
+  <parameter name="baseAddress" value="0x04001110" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection
@@ -687,7 +687,7 @@
    start="nios2_cpu.data_master"
    end="pll.pll_slave">
   <parameter name="arbitrationPriority" value="1" />
-  <parameter name="baseAddress" value="0x040010b0" />
+  <parameter name="baseAddress" value="0x04001100" />
   <parameter name="defaultConnection" value="false" />
  </connection>
  <connection

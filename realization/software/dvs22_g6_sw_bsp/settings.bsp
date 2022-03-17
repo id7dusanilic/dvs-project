@@ -917,38 +917,38 @@
                 <attributes>memory</attributes>
         </MemoryMap>
         <MemoryMap>
+                <slaveDescriptor>performance_counter</slaveDescriptor>
+                <addressRange>0x04001000 - 0x0400107F</addressRange>
+                <addressSpan>128</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
                 <slaveDescriptor>sgdma_out</slaveDescriptor>
-                <addressRange>0x04001000 - 0x0400103F</addressRange>
+                <addressRange>0x04001080 - 0x040010BF</addressRange>
                 <addressSpan>64</addressSpan>
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
                 <slaveDescriptor>sgdma_in</slaveDescriptor>
-                <addressRange>0x04001040 - 0x0400107F</addressRange>
+                <addressRange>0x040010C0 - 0x040010FF</addressRange>
                 <addressSpan>64</addressSpan>
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
-                <slaveDescriptor>performance_counter</slaveDescriptor>
-                <addressRange>0x04001080 - 0x0400109F</addressRange>
-                <addressSpan>32</addressSpan>
-                <attributes/>
-        </MemoryMap>
-        <MemoryMap>
-                <slaveDescriptor>acc_bilinear_scaling</slaveDescriptor>
-                <addressRange>0x040010A0 - 0x040010AF</addressRange>
+                <slaveDescriptor>pll</slaveDescriptor>
+                <addressRange>0x04001100 - 0x0400110F</addressRange>
                 <addressSpan>16</addressSpan>
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
-                <slaveDescriptor>pll</slaveDescriptor>
-                <addressRange>0x040010B0 - 0x040010BF</addressRange>
+                <slaveDescriptor>acc_bilinear_scaling</slaveDescriptor>
+                <addressRange>0x04001110 - 0x0400111F</addressRange>
                 <addressSpan>16</addressSpan>
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
                 <slaveDescriptor>jtag_uart</slaveDescriptor>
-                <addressRange>0x040010C0 - 0x040010C7</addressRange>
+                <addressRange>0x04001120 - 0x04001127</addressRange>
                 <addressSpan>8</addressSpan>
                 <attributes>printable</attributes>
         </MemoryMap>
