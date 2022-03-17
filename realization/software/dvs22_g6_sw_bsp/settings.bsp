@@ -911,12 +911,6 @@
                 <Group xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
         </Setting>
         <MemoryMap>
-                <slaveDescriptor>bilinear_scaling</slaveDescriptor>
-                <addressRange>0x00000000 - 0x00000001</addressRange>
-                <addressSpan>2</addressSpan>
-                <attributes/>
-        </MemoryMap>
-        <MemoryMap>
                 <slaveDescriptor>sdram</slaveDescriptor>
                 <addressRange>0x02000000 - 0x03FFFFFF</addressRange>
                 <addressSpan>33554432</addressSpan>
@@ -941,14 +935,20 @@
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
-                <slaveDescriptor>pll</slaveDescriptor>
+                <slaveDescriptor>acc_bilinear_scaling</slaveDescriptor>
                 <addressRange>0x040010A0 - 0x040010AF</addressRange>
                 <addressSpan>16</addressSpan>
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
+                <slaveDescriptor>pll</slaveDescriptor>
+                <addressRange>0x040010B0 - 0x040010BF</addressRange>
+                <addressSpan>16</addressSpan>
+                <attributes/>
+        </MemoryMap>
+        <MemoryMap>
                 <slaveDescriptor>jtag_uart</slaveDescriptor>
-                <addressRange>0x040010B0 - 0x040010B7</addressRange>
+                <addressRange>0x040010C0 - 0x040010C7</addressRange>
                 <addressSpan>8</addressSpan>
                 <attributes>printable</attributes>
         </MemoryMap>

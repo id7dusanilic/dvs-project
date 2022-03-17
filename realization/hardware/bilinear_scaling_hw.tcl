@@ -4,8 +4,8 @@
 
 
 # 
-# bilinear_scaling "bilinear_scaling" v0.1
-#  2022.03.14.10:13:39
+# acc_bilinear_scaling "acc_bilinear_scaling" v0.1
+#  2022.03.17.10:40:18
 # 
 # 
 
@@ -41,6 +41,7 @@ set_fileset_property QUARTUS_SYNTH ENABLE_RELATIVE_INCLUDE_PATHS false
 set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file acc_bilinear_scaling.vhd VHDL PATH acc_bilinear_scaling.vhd
 add_fileset_file RAM.vhd VHDL PATH RAM.vhd
+add_fileset_file acc_bilinear_scaling_PK.vhd VHDL PATH acc_bilinear_scaling_PK.vhd
 
 
 # 

@@ -133,13 +133,13 @@
  *
  */
 
+#define __ACC_BILINEAR_SCALING
 #define __ALTERA_AVALON_JTAG_UART
 #define __ALTERA_AVALON_NEW_SDRAM_CONTROLLER
 #define __ALTERA_AVALON_PERFORMANCE_COUNTER
 #define __ALTERA_AVALON_SGDMA
 #define __ALTERA_NIOS2_GEN2
 #define __ALTPLL
-#define __BILINEAR_SCALING
 
 
 /*
@@ -158,19 +158,19 @@
 #define ALT_NUM_INTERNAL_INTERRUPT_CONTROLLERS 1
 #define ALT_NUM_INTERRUPT_CONTROLLERS 1
 #define ALT_STDERR "/dev/jtag_uart"
-#define ALT_STDERR_BASE 0x40010b0
+#define ALT_STDERR_BASE 0x40010c0
 #define ALT_STDERR_DEV jtag_uart
 #define ALT_STDERR_IS_JTAG_UART
 #define ALT_STDERR_PRESENT
 #define ALT_STDERR_TYPE "altera_avalon_jtag_uart"
 #define ALT_STDIN "/dev/jtag_uart"
-#define ALT_STDIN_BASE 0x40010b0
+#define ALT_STDIN_BASE 0x40010c0
 #define ALT_STDIN_DEV jtag_uart
 #define ALT_STDIN_IS_JTAG_UART
 #define ALT_STDIN_PRESENT
 #define ALT_STDIN_TYPE "altera_avalon_jtag_uart"
 #define ALT_STDOUT "/dev/jtag_uart"
-#define ALT_STDOUT_BASE 0x40010b0
+#define ALT_STDOUT_BASE 0x40010c0
 #define ALT_STDOUT_DEV jtag_uart
 #define ALT_STDOUT_IS_JTAG_UART
 #define ALT_STDOUT_PRESENT
@@ -179,25 +179,25 @@
 
 
 /*
+ * acc_bilinear_scaling configuration
+ *
+ */
+
+#define ACC_BILINEAR_SCALING_BASE 0x40010a0
+#define ACC_BILINEAR_SCALING_IRQ -1
+#define ACC_BILINEAR_SCALING_IRQ_INTERRUPT_CONTROLLER_ID -1
+#define ACC_BILINEAR_SCALING_NAME "/dev/acc_bilinear_scaling"
+#define ACC_BILINEAR_SCALING_SPAN 16
+#define ACC_BILINEAR_SCALING_TYPE "acc_bilinear_scaling"
+#define ALT_MODULE_CLASS_acc_bilinear_scaling acc_bilinear_scaling
+
+
+/*
  * altera_hostfs configuration
  *
  */
 
 #define ALTERA_HOSTFS_NAME "/mnt/host"
-
-
-/*
- * bilinear_scaling configuration
- *
- */
-
-#define ALT_MODULE_CLASS_bilinear_scaling bilinear_scaling
-#define BILINEAR_SCALING_BASE 0x0
-#define BILINEAR_SCALING_IRQ -1
-#define BILINEAR_SCALING_IRQ_INTERRUPT_CONTROLLER_ID -1
-#define BILINEAR_SCALING_NAME "/dev/bilinear_scaling"
-#define BILINEAR_SCALING_SPAN 2
-#define BILINEAR_SCALING_TYPE "bilinear_scaling"
 
 
 /*
@@ -217,7 +217,7 @@
  */
 
 #define ALT_MODULE_CLASS_jtag_uart altera_avalon_jtag_uart
-#define JTAG_UART_BASE 0x40010b0
+#define JTAG_UART_BASE 0x40010c0
 #define JTAG_UART_IRQ 0
 #define JTAG_UART_IRQ_INTERRUPT_CONTROLLER_ID 0
 #define JTAG_UART_NAME "/dev/jtag_uart"
@@ -250,7 +250,7 @@
  */
 
 #define ALT_MODULE_CLASS_pll altpll
-#define PLL_BASE 0x40010a0
+#define PLL_BASE 0x40010b0
 #define PLL_IRQ -1
 #define PLL_IRQ_INTERRUPT_CONTROLLER_ID -1
 #define PLL_NAME "/dev/pll"
