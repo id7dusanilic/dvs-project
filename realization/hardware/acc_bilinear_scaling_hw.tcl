@@ -121,18 +121,18 @@ add_interface_port output_data aso_output_data_ready ready Input 1
 # connection point params
 # 
 add_interface params avalon end
-set_interface_property params addressUnits WORDS
+set_interface_property params addressUnits SYMBOLS
 set_interface_property params associatedClock clk
 set_interface_property params associatedReset reset
 set_interface_property params bitsPerSymbol 8
 set_interface_property params burstOnBurstBoundariesOnly false
-set_interface_property params burstcountUnits WORDS
+set_interface_property params burstcountUnits SYMBOLS
 set_interface_property params explicitAddressSpan 0
 set_interface_property params holdTime 0
 set_interface_property params linewrapBursts false
 set_interface_property params maximumPendingReadTransactions 0
 set_interface_property params maximumPendingWriteTransactions 0
-set_interface_property params readLatency 0
+set_interface_property params readLatency 1
 set_interface_property params readWaitTime 1
 set_interface_property params setupTime 0
 set_interface_property params timingUnits Cycles
@@ -143,11 +143,11 @@ set_interface_property params PORT_NAME_MAP ""
 set_interface_property params CMSIS_SVD_VARIABLES ""
 set_interface_property params SVD_ADDRESS_GROUP ""
 
-add_interface_port params params_address address Input 3
+add_interface_port params params_address address Input 4
 add_interface_port params params_read read Input 1
 add_interface_port params params_write write Input 1
-add_interface_port params params_readdata readdata Output 16
-add_interface_port params params_writedata writedata Input 16
+add_interface_port params params_readdata readdata Output 8
+add_interface_port params params_writedata writedata Input 8
 add_interface_port params params_waitrequest waitrequest Output 1
 set_interface_assignment params embeddedsw.configuration.isFlash 0
 set_interface_assignment params embeddedsw.configuration.isMemoryDevice 0

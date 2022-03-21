@@ -16,12 +16,13 @@ package acc_bilinear_scaling_PK is
     constant C_DATA_WIDTH       : natural := 8;
     constant C_RAM_DEPTH        : natural := 2**C_ADDR_WIDTH;
 
-    constant C_MM_ADDR_WIDTH    : natural := 3;
+    constant C_MM_ADDR_WIDTH    : natural := 4;
+    constant C_MM_DATA_WIDTH    : natural := 8;
 
-    constant C_SX_ADDR          : std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := "000";
-    constant C_SY_ADDR          : std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := "001";
-    constant C_SX_INV_ADDR      : std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := "010";
-    constant C_SY_INV_ADDR      : std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := "011";
-    constant C_WIDTH_ADDR       : std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := "100";
-    constant C_HEIGHT_ADDR      : std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := "101";
+    constant C_SX_ADDR          : natural := 0;
+    constant C_SY_ADDR          : natural := 1;
+    constant C_SX_INV_ADDR      : natural := 2;
+    constant C_SY_INV_ADDR      : natural := 4;
+    constant C_WIDTH_ADDR       : natural := 6;
+    constant C_HEIGHT_ADDR      : natural := 8;
 end acc_bilinear_scaling_PK;
