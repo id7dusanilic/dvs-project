@@ -21,11 +21,11 @@ architecture Test of acc_bilinear_scaling_TB is
     signal aso_output_data_ready : std_logic := '0';
     signal aso_output_data_data_err : std_logic := '0';
     signal aso_output_data_last_err : std_logic := '0';
-    signal params_address : std_logic_vector(2 downto 0)  := (1 => '1', others => '0');
+    signal params_address : std_logic_vector(3 downto 0)  := (1 => '1', others => '0');
     signal params_read : std_logic := '0';
     signal params_write : std_logic := '0';
-    signal params_readdata : std_logic_vector (15 downto 0) := (others => '0');
-    signal params_writedata : std_logic_vector (15 downto 0) := x"0010";
+    signal params_readdata : std_logic_vector (7 downto 0) := (others => '0');
+    signal params_writedata : std_logic_vector (7 downto 0) := x"10";
     signal params_waitrequest : std_logic := '0';
 
     constant C_TCLK : time := 20 ns;
@@ -70,5 +70,19 @@ begin
 
     clk <= not clk after C_TCLK/2;
     reset <= '0' after C_TCLK;
+
+    process is
+    begin
+        wait until reset='0';
+        wait until rising_edge(clk);
+        params_write <= '1';
+        wait for C_TCLK;
+        params_write <= '0';
+        wait for 3*C_TCLK;
+        params_read <= '1';
+        wait for C_TCLK;
+        params_read <= '0';
+        wait;
+    end process;
 
 end architecture Test;

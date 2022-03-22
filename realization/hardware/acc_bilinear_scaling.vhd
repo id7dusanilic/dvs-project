@@ -1,4 +1,6 @@
-library IEEE;use IEEE.std_logic_1164.all; use IEEE.numeric_std.all;
+library IEEE;
+use IEEE.std_logic_1164.all;
+use IEEE.numeric_std.all;
 
 use work.acc_bilinear_scaling_PK.all;
 
@@ -32,7 +34,14 @@ architecture rtl of acc_bilinear_scaling is
     type ram_counter_t  is array (0 to 1) of integer range 0 to C_RAM_DEPTH-1;
     type register_map_t is array (0 to 2**C_MM_ADDR_WIDTH-1) of std_logic_vector(C_MM_DATA_WIDTH - 1 downto 0);
 
-    signal register_map     : register_map_t := (others => (others => '1'));
+    type row_data_t     is array (0 to 1) of integer range 0 to 2**C_DATA_WIDTH-1;
+
+    type state_t        is (st_wait, st_read, st_process);
+
+    signal current_state    : state_t;
+    signal next_state       : state_t;
+
+    signal register_map     : register_map_t;
 
     signal r_sx             : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
     signal r_sy             : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
@@ -44,26 +53,50 @@ architecture rtl of acc_bilinear_scaling is
     signal w_width          : integer range 0 to 2**C_DIM_WIDTH;
     signal w_height         : integer range 0 to 2**C_DIM_WIDTH;
 
-    signal r_ram_sel        : std_logic := '0'; -- The RAM that is being written to
+    signal r_width_out      : integer range 0 to 2**C_DIM_WIDTH;
+    signal r_height_out     : integer range 0 to 2**C_DIM_WIDTH;
+
+    signal c_x_out          : integer range 0 to 2**C_DIM_WIDTH;
+    signal c_y_out          : integer range 0 to 2**C_DIM_WIDTH;
+
+    signal r_ram_sel        : std_logic; -- The RAM that is being written to
     signal w_ram_sel        : integer range 0 to 1;
 
-    signal r_rd             : std_logic := '0';
-    signal w_wr_array       : ram_signal_t := (others => '0');
-    signal c_wr_column      : ram_counter_t := (others => 0);
-    signal w_wr_addr        : ram_addr_t := (others => (others => '0'));
+    signal r_rd             : std_logic;
+    signal w_wr_array       : ram_signal_t;
+    signal c_wr_column      : ram_counter_t;
+    signal w_wr_addr        : ram_addr_t;
 
-    signal c_rd_column      : integer range 0 to C_RAM_DEPTH-1 := 0;
-    signal w_rd_addr        : std_logic_vector(C_ADDR_WIDTH-1 downto 0) := (others => '0');
+    signal c_rd_column      : integer range 0 to C_RAM_DEPTH-1;
+    signal w_rd_addr        : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
 
-    signal r_data_in        : std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-    signal r_data_out       : ram_data_t := (others => (others => '0'));
+    signal r_data_in        : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    signal r_data_out       : ram_data_t;
 
-    signal r_ram_filled     : ram_signal_t := (others => '0');
+    signal r_ram_filled     : ram_signal_t;
     signal w_processing     : std_logic;
     signal r_wr             : std_logic;
 
-    signal w_asi_input_data_ready : std_logic := '0';
+    signal w_asi_input_data_ready : std_logic;
 
+    signal r_x              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
+    signal r_y              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
+    signal r_alpha_x        : integer range 0 to 2**C_NFRAC-1;
+    signal r_alpha_y        : integer range 0 to 2**C_NFRAC-1;
+    signal r_floor_x        : integer range 0 to 2**C_DIM_WIDTH-1;
+    signal r_floor_y        : integer range 0 to 2**C_DIM_WIDTH-1;
+    signal r_floor_x1       : integer range 0 to 2**C_DIM_WIDTH-1;
+    signal r_floor_y1       : integer range 0 to 2**C_DIM_WIDTH-1;
+
+    signal w_x_inc          : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
+    signal w_floor_x_inc    : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
+
+    signal r_top            : row_data_t;
+    signal r_bottom         : row_data_t;
+
+    signal r_proc_flag      : std_logic;
+
+    signal r_read_status    : std_logic_vector(3 downto 0);
 begin
 
     r_sx <= register_map(C_SX_ADDR);
@@ -73,10 +106,169 @@ begin
     r_width <= register_map(C_WIDTH_ADDR+1) & register_map(C_WIDTH_ADDR);
     r_height <= register_map(C_HEIGHT_ADDR+1) & register_map(C_HEIGHT_ADDR);
 
-    w_width <= to_integer(unsigned(r_width));
-    w_height <= to_integer(unsigned(r_height));
+    -- w_width <= to_integer(unsigned(r_width));
+    -- w_height <= to_integer(unsigned(r_height));
 
     w_ram_sel <= 1 when r_ram_sel='1' else 0;
+
+    r_alpha_x <= to_integer(unsigned( r_x(C_NFRAC-1 downto 0) ));
+    r_alpha_y <= to_integer(unsigned( r_y(C_NFRAC-1 downto 0) ));
+    r_floor_x <= to_integer(unsigned( r_x(r_x'high downto C_NFRAC)));
+    r_floor_y <= to_integer(unsigned( r_y(r_y'high downto C_NFRAC)));
+
+    w_x_inc <= to_integer(unsigned(r_x)) + to_integer(unsigned(r_sx_inv));
+    w_floor_x_inc <= w_x_inc / 2**C_NFRAC;
+
+    r_proc_flag <= '1' when w_floor_x_inc>r_floor_x and current_state=st_process else '0';
+
+    CONTROL_STATE: process(clk) is
+    begin
+        if rising_edge(clk) then
+            current_state <= next_state;
+            if reset='1' then
+                current_state <= st_wait;
+            end if;
+        end if;
+    end process CONTROL_STATE;
+
+    NEXT_STATE_PROCESS: process(current_state, r_proc_flag, r_ram_filled, r_read_status) is
+    begin
+        case current_state is
+            when st_wait =>
+                if r_ram_filled(0)='1' and r_ram_filled(1)='1' then
+                    next_state <= st_read;
+                else
+                    next_state <= st_wait;
+                end if;
+            when st_read =>
+                if r_read_status(0)='0' then
+                    next_state <= st_read;
+                else
+                    next_state <= st_process;
+                end if;
+            when st_process =>
+                if r_proc_flag = '0' then
+                    next_state <= st_process;
+                else
+                    if c_x_out < r_width_out-1 then
+                        next_state <= st_read;
+                    else
+                        next_state <= st_wait;
+                    end if;
+                end if;
+            when others =>
+                next_state <= st_wait;
+        end case;
+    end process NEXT_STATE_PROCESS;
+
+    OUTPUT_GENERATE: process(current_state) is
+    begin
+        case current_state is
+            when st_read =>
+                r_rd <= '1';
+            when others =>
+                r_rd <= '0';
+        end case;
+    end process OUTPUT_GENERATE;
+
+    PROCESSING: process(clk) is
+        variable v_x : std_logic_vector(r_x'range);
+        variable v_alpha_x : integer range 0 to 2**C_NFRAC-1;
+        variable v_floor_x : integer range 0 to 2**C_DIM_WIDTH-1;
+        variable v_x_out   : integer range 0 to 2**C_DIM_WIDTH-1;
+
+        variable v_y : std_logic_vector(r_y'range);
+        variable v_alpha_y : integer range 0 to 2**C_NFRAC-1;
+        variable v_floor_y : integer range 0 to 2**C_DIM_WIDTH-1;
+        variable v_y_out   : integer range 0 to 2**C_DIM_WIDTH-1;
+    begin
+        if rising_edge(clk) then
+            if current_state = st_process then
+                v_x := std_logic_vector(unsigned(r_x) + unsigned(r_sx_inv));
+                v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
+                v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
+                r_x <= v_x when (v_floor_x < w_width) else (others => '0');
+
+                v_y := std_logic_vector(unsigned(r_y) + unsigned(r_sy_inv));
+                v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
+                v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
+                r_y <= v_y when (v_floor_y < w_height) else (others => '0');
+
+                v_x_out := c_x_out + 1;
+                c_x_out <= v_x_out when (v_x_out <= r_width_out-1) else 0;
+
+                if c_x_out=r_width_out-1 then
+                    v_y_out := c_y_out + 1;
+                    c_y_out <= v_y_out when (v_y_out <= r_height_out-1) else 0;
+                end if;
+
+            end if;
+            if reset='1' then
+                r_x <= (others => '0');
+                r_y <= (others => '0');
+                c_x_out <= 0;
+                c_y_out <= 0;
+            end if;
+        end if;
+    end process PROCESSING;
+
+    COL_SELECT: process(current_state, r_read_status, r_floor_x) is
+    begin
+        if current_state = st_read then
+            case r_read_status is
+                when "1000" =>
+                    c_rd_column <= r_floor_x;
+                when "0100" =>
+                    c_rd_column <= r_floor_x;
+                when "0010" =>
+                    if r_floor_x=w_width-1 then
+                        c_rd_column <= r_floor_x;
+                    else
+                        c_rd_column <= r_floor_x + 1;
+                    end if;
+                when "0001" =>
+                    if r_floor_x=w_width-1 then
+                        c_rd_column <= r_floor_x;
+                    else
+                        c_rd_column <= r_floor_x + 1;
+                    end if;
+                when others =>
+                    c_rd_column <= r_floor_x;
+            end case;
+        end if;
+    end process COL_SELECT;
+
+    READ_DATA_BUFFERS: process(clk) is
+    variable v_sel_top      : integer range 0 to 1;
+    variable v_sel_bottom   : integer range 0 to 1;
+    begin
+        if rising_edge(clk) then
+            v_sel_bottom := 1 when w_ram_sel=0 else 0;
+            v_sel_top := 0 when w_ram_sel=0 else 1;
+            if current_state = st_read then
+                case r_read_status is
+                    when "1000" =>
+                        null;
+                    when "0100" =>
+                        r_top(0)    <= to_integer(unsigned(r_data_out(v_sel_top)));
+                        r_bottom(0) <= to_integer(unsigned(r_data_out(v_sel_bottom)));
+                    when "0010" =>
+                        null;
+                    when "0001" =>
+                        r_top(1)    <= to_integer(unsigned(r_data_out(v_sel_top)));
+                        r_bottom(1) <= to_integer(unsigned(r_data_out(v_sel_bottom)));
+                    when others =>
+                        null;
+                end case;
+                r_read_status <= r_read_status(0) & r_read_status(3 downto 1);
+            end if;
+            if reset='1' then
+                r_top <= (others => 0);
+                r_bottom <= (others => 0);
+                r_read_status <= "1000";
+            end if;
+        end if;
+    end process READ_DATA_BUFFERS;
 
     WRITE_MM: process(clk) is
         variable v_address : integer range 0 to 2**C_MM_ADDR_WIDTH - 1;
@@ -145,10 +337,8 @@ begin
     w_asi_input_data_ready <= not w_processing;
     asi_input_data_ready <= w_asi_input_data_ready;
 
-    r_rd <= w_processing;
-
-    w_wr_array(0) <= r_wr and not r_ram_sel;
-    w_wr_array(1) <= r_wr and r_ram_sel;
+    w_wr_array(0) <= r_wr and not r_ram_filled(0) and not r_ram_sel;
+    w_wr_array(1) <= r_wr and not r_ram_filled(1) and r_ram_sel;
 
     COUNT: process (clk) is
     begin
@@ -162,19 +352,18 @@ begin
                 end if;
             end if;
 
-            -- Read address increment
-            if r_rd='1' then
-                c_rd_column <= c_rd_column + 1;
-                if c_rd_column=w_width-1 then
-                    c_rd_column <= 0;
-                    r_ram_filled(w_ram_sel) <= '0';
+            if c_x_out = r_width_out-1 then
+                r_ram_filled(w_ram_sel) <= '0';
+
+                if c_y_out = r_height_out-1 then
+                    r_ram_filled <= (others => '0');
                 end if;
             end if;
 
             if reset='1' then
                 c_wr_column(0) <= 0;
                 c_wr_column(1) <= 0;
-                c_rd_column <= 0;
+                r_ram_filled <= (others => '0');
             end if;
         end if;
     end process COUNT;
@@ -191,13 +380,8 @@ begin
         end if;
     end process RAM_SELECT;
 
-    process (clk) is
-    begin
-        if rising_edge(clk) then
-            r_data_in <= asi_input_data_data;
-            r_wr <= (asi_input_data_valid and w_asi_input_data_ready);
-        end if;
-    end process;
+    r_data_in <= asi_input_data_data;
+    r_wr <= (asi_input_data_valid and w_asi_input_data_ready);
 
     -- TODO: Auto-generated HDL template
 
