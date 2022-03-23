@@ -6,24 +6,24 @@ use work.acc_bilinear_scaling_PK.all;
 
 entity acc_bilinear_scaling is
     port (
-        clk                           : in  std_logic := '0';
-        reset                         : in  std_logic := '0';
-        asi_input_data_data           : in  std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-        asi_input_data_valid          : in  std_logic := '0';
-        asi_input_data_ready          : out std_logic;
-        asi_input_data_sop            : in  std_logic := '0';
-        asi_input_data_eop            : in  std_logic := '0';
-        aso_output_data_data          : out std_logic_vector(C_DATA_WIDTH-1 downto 0);
-        aso_output_data_endofpacket   : out std_logic;
-        aso_output_data_startofpacket : out std_logic;
-        aso_output_data_valid         : out std_logic;
-        aso_output_data_ready         : in  std_logic := '0';
-        params_address                : in  std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := (others => '0');
-        params_read                   : in  std_logic := '0';
-        params_write                  : in  std_logic := '0';
-        params_readdata               : out std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
-        params_writedata              : in  std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := (others => '0');
-        params_waitrequest            : out std_logic
+        clk                             : in  std_logic := '0';
+        reset                           : in  std_logic := '0';
+        asi_input_data_data             : in  std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
+        asi_input_data_valid            : in  std_logic := '0';
+        asi_input_data_ready            : out std_logic;
+        asi_input_data_sop              : in  std_logic := '0';
+        asi_input_data_eop              : in  std_logic := '0';
+        aso_output_data_data            : out std_logic_vector(C_DATA_WIDTH-1 downto 0);
+        aso_output_data_endofpacket     : out std_logic;
+        aso_output_data_startofpacket   : out std_logic;
+        aso_output_data_valid           : out std_logic;
+        aso_output_data_ready           : in  std_logic := '0';
+        params_address                  : in  std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := (others => '0');
+        params_read                     : in  std_logic := '0';
+        params_write                    : in  std_logic := '0';
+        params_readdata                 : out std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
+        params_writedata                : in  std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := (others => '0');
+        params_waitrequest              : out std_logic
     );
 end entity acc_bilinear_scaling;
 
