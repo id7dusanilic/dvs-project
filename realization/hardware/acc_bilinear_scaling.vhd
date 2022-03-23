@@ -106,8 +106,8 @@ begin
     r_width <= register_map(C_WIDTH_ADDR+1) & register_map(C_WIDTH_ADDR);
     r_height <= register_map(C_HEIGHT_ADDR+1) & register_map(C_HEIGHT_ADDR);
 
-    -- w_width <= to_integer(unsigned(r_width));
-    -- w_height <= to_integer(unsigned(r_height));
+    w_width <= to_integer(unsigned(r_width));
+    w_height <= to_integer(unsigned(r_height));
 
     w_ram_sel <= 1 when r_ram_sel='1' else 0;
 
