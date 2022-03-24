@@ -91,6 +91,14 @@ architecture rtl of acc_bilinear_scaling is
     signal w_x_inc          : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
     signal w_floor_x_inc    : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
 
+    signal r_subp_topleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
+    signal r_subp_botleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
+    signal r_subp_topright  : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
+    signal r_subp_botright  : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
+    signal r_subp_top       : integer range 0 to 2**(C_NFRAC+2*C_DATA_WIDTH+1)-1;
+    signal r_subp_bot       : integer range 0 to 2**(C_NFRAC+2*C_DATA_WIDTH+1)-1;
+    signal r_prod           : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+
     -- Flag indicating that all pixels that need current group of pixels
     -- are processed and new group of pixels can be read
     signal r_proc_flag      : std_logic;
@@ -215,7 +223,17 @@ begin
                     r_y <= v_y when (v_floor_y < v_height) else (others => '0');
                 end if;
 
+                -- TODO Calculation itself
+                r_subp_topleft <= (2**C_NFRAC - r_alpha_x) * r_top(0);
+                r_subp_botleft <= (2**C_NFRAC - r_alpha_x) * r_bottom(1);
+                r_subp_topright <= r_alpha_x * r_top(0);
+                r_subp_botright <= r_alpha_x * r_bottom(1);
+
             end if;
+            r_subp_top <= (2**C_NFRAC - r_alpha_y) * (r_subp_topleft + r_subp_topright) / 2**C_NFRAC;
+            r_subp_bot <= r_alpha_y * (r_subp_botleft + r_subp_botright) / 2**C_NFRAC;
+
+            r_prod <= std_logic_vector(to_unsigned((r_subp_top + r_subp_bot) / 2**C_NFRAC, C_DATA_WIDTH));
             if reset='1' then
                 r_x <= (others => '0');
                 r_y <= (others => '0');
