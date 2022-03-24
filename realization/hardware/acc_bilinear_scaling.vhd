@@ -6,29 +6,28 @@ use work.acc_bilinear_scaling_PK.all;
 
 entity acc_bilinear_scaling is
     port (
-        clk                             : in  std_logic := '0';
-        reset                           : in  std_logic := '0';
-        asi_input_data_data             : in  std_logic_vector(C_DATA_WIDTH-1 downto 0) := (others => '0');
-        asi_input_data_valid            : in  std_logic := '0';
+        clk                             : in  std_logic;
+        reset                           : in  std_logic;
+        asi_input_data_data             : in  std_logic_vector(C_DATA_WIDTH-1 downto 0);
+        asi_input_data_valid            : in  std_logic;
         asi_input_data_ready            : out std_logic;
-        asi_input_data_sop              : in  std_logic := '0';
-        asi_input_data_eop              : in  std_logic := '0';
+        asi_input_data_sop              : in  std_logic;
+        asi_input_data_eop              : in  std_logic;
         aso_output_data_data            : out std_logic_vector(C_DATA_WIDTH-1 downto 0);
         aso_output_data_endofpacket     : out std_logic;
         aso_output_data_startofpacket   : out std_logic;
         aso_output_data_valid           : out std_logic;
-        aso_output_data_ready           : in  std_logic := '0';
-        params_address                  : in  std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0) := (others => '0');
-        params_read                     : in  std_logic := '0';
-        params_write                    : in  std_logic := '0';
+        aso_output_data_ready           : in  std_logic;
+        params_address                  : in  std_logic_vector(C_MM_ADDR_WIDTH-1 downto 0);
+        params_read                     : in  std_logic;
+        params_write                    : in  std_logic;
         params_readdata                 : out std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
-        params_writedata                : in  std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := (others => '0');
+        params_writedata                : in  std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
         params_waitrequest              : out std_logic
     );
 end entity acc_bilinear_scaling;
 
 architecture rtl of acc_bilinear_scaling is
-    type ram_signal_t   is array (0 to 1) of std_logic;
     type ram_data_t     is array (0 to 1) of std_logic_vector(C_DATA_WIDTH-1 downto 0);
     type ram_addr_t     is array (0 to 1) of std_logic_vector(C_ADDR_WIDTH-1 downto 0);
     type ram_counter_t  is array (0 to 1) of integer range 0 to C_RAM_DEPTH-1;
@@ -50,9 +49,6 @@ architecture rtl of acc_bilinear_scaling is
     signal r_width          : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
     signal r_height         : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
 
-    signal w_width          : integer range 0 to 2**C_DIM_WIDTH;
-    signal w_height         : integer range 0 to 2**C_DIM_WIDTH;
-
     signal r_width_out      : integer range 0 to 2**C_DIM_WIDTH;
     signal r_height_out     : integer range 0 to 2**C_DIM_WIDTH;
 
@@ -62,20 +58,20 @@ architecture rtl of acc_bilinear_scaling is
     signal r_ram_sel        : std_logic; -- The RAM that is being written to
     signal w_ram_sel        : integer range 0 to 1;
 
-    signal r_rd             : std_logic;
-    signal w_wr_array       : ram_signal_t;
+    signal w_rd             : std_logic;
+    signal w_wr_array       : std_logic_vector(1 downto 0);
     signal c_wr_column      : ram_counter_t;
     signal w_wr_addr        : ram_addr_t;
 
     signal c_rd_column      : integer range 0 to C_RAM_DEPTH-1;
     signal w_rd_addr        : std_logic_vector(C_ADDR_WIDTH-1 downto 0);
 
-    signal r_data_in        : std_logic_vector(C_DATA_WIDTH-1 downto 0);
-    signal r_data_out       : ram_data_t;
+    signal w_ram_data_in    : std_logic_vector(C_DATA_WIDTH-1 downto 0);
+    signal w_ram_data_out   : ram_data_t;
 
-    signal r_ram_filled     : ram_signal_t;
+    signal r_ram_filled     : std_logic_vector(1 downto 0);
     signal w_processing     : std_logic;
-    signal r_wr             : std_logic;
+    signal w_wr             : std_logic;
 
     signal w_asi_input_data_ready : std_logic;
 
@@ -105,9 +101,6 @@ begin
     r_sy_inv <= register_map(C_SY_INV_ADDR+1) & register_map(C_SY_INV_ADDR);
     r_width <= register_map(C_WIDTH_ADDR+1) & register_map(C_WIDTH_ADDR);
     r_height <= register_map(C_HEIGHT_ADDR+1) & register_map(C_HEIGHT_ADDR);
-
-    w_width <= to_integer(unsigned(r_width));
-    w_height <= to_integer(unsigned(r_height));
 
     w_ram_sel <= 1 when r_ram_sel='1' else 0;
 
@@ -165,34 +158,39 @@ begin
     begin
         case current_state is
             when st_read =>
-                r_rd <= '1';
+                w_rd <= '1';
             when others =>
-                r_rd <= '0';
+                w_rd <= '0';
         end case;
     end process OUTPUT_GENERATE;
 
     PROCESSING: process(clk) is
-        variable v_x : std_logic_vector(r_x'range);
-        variable v_alpha_x : integer range 0 to 2**C_NFRAC-1;
-        variable v_floor_x : integer range 0 to 2**C_DIM_WIDTH-1;
-        variable v_x_out   : integer range 0 to 2**C_DIM_WIDTH-1;
+        variable v_x        : std_logic_vector(r_x'range);
+        variable v_alpha_x  : integer range 0 to 2**C_NFRAC-1;
+        variable v_floor_x  : integer range 0 to 2**C_DIM_WIDTH-1;
+        variable v_x_out    : integer range 0 to 2**C_DIM_WIDTH-1;
 
-        variable v_y : std_logic_vector(r_y'range);
-        variable v_alpha_y : integer range 0 to 2**C_NFRAC-1;
-        variable v_floor_y : integer range 0 to 2**C_DIM_WIDTH-1;
-        variable v_y_out   : integer range 0 to 2**C_DIM_WIDTH-1;
+        variable v_y        : std_logic_vector(r_y'range);
+        variable v_alpha_y  : integer range 0 to 2**C_NFRAC-1;
+        variable v_floor_y  : integer range 0 to 2**C_DIM_WIDTH-1;
+        variable v_y_out    : integer range 0 to 2**C_DIM_WIDTH-1;
+
+        variable v_width    : integer range 0 to 2**C_DIM_WIDTH;
+        variable v_height   : integer range 0 to 2**C_DIM_WIDTH;
     begin
         if rising_edge(clk) then
+            v_width  := to_integer(unsigned(r_width));
+            v_height := to_integer(unsigned(r_height));
             if current_state = st_process then
                 v_x := std_logic_vector(unsigned(r_x) + unsigned(r_sx_inv));
                 v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
                 v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
-                r_x <= v_x when (v_floor_x < w_width) else (others => '0');
+                r_x <= v_x when (v_floor_x < v_width) else (others => '0');
 
                 v_y := std_logic_vector(unsigned(r_y) + unsigned(r_sy_inv));
                 v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
                 v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
-                r_y <= v_y when (v_floor_y < w_height) else (others => '0');
+                r_y <= v_y when (v_floor_y < v_height) else (others => '0');
 
                 v_x_out := c_x_out + 1;
                 c_x_out <= v_x_out when (v_x_out <= r_width_out-1) else 0;
@@ -221,13 +219,13 @@ begin
                 when "0100" =>
                     c_rd_column <= r_floor_x;
                 when "0010" =>
-                    if r_floor_x=w_width-1 then
+                    if r_floor_x=v_width-1 then
                         c_rd_column <= r_floor_x;
                     else
                         c_rd_column <= r_floor_x + 1;
                     end if;
                 when "0001" =>
-                    if r_floor_x=w_width-1 then
+                    if r_floor_x=v_width-1 then
                         c_rd_column <= r_floor_x;
                     else
                         c_rd_column <= r_floor_x + 1;
@@ -250,13 +248,13 @@ begin
                     when "1000" =>
                         null;
                     when "0100" =>
-                        r_top(0)    <= to_integer(unsigned(r_data_out(v_sel_top)));
-                        r_bottom(0) <= to_integer(unsigned(r_data_out(v_sel_bottom)));
+                        r_top(0)    <= to_integer(unsigned(w_ram_data_out(v_sel_top)));
+                        r_bottom(0) <= to_integer(unsigned(w_ram_data_out(v_sel_bottom)));
                     when "0010" =>
                         null;
                     when "0001" =>
-                        r_top(1)    <= to_integer(unsigned(r_data_out(v_sel_top)));
-                        r_bottom(1) <= to_integer(unsigned(r_data_out(v_sel_bottom)));
+                        r_top(1)    <= to_integer(unsigned(w_ram_data_out(v_sel_top)));
+                        r_bottom(1) <= to_integer(unsigned(w_ram_data_out(v_sel_bottom)));
                     when others =>
                         null;
                 end case;
@@ -305,12 +303,12 @@ begin
         )
         port map (
             clk => clk,
-            rd => r_rd,
+            rd => w_rd,
             wr => w_wr_array(0),
             rd_addr => w_rd_addr,
             wr_addr => w_wr_addr(0),
-            data_in => r_data_in,
-            data_out => r_data_out(0)
+            data_in => w_ram_data_in,
+            data_out => w_ram_data_out(0)
         );
 
     RAM_i1: entity work.RAM
@@ -320,12 +318,12 @@ begin
         )
         port map (
             clk => clk,
-            rd => r_rd,
+            rd => w_rd,
             wr => w_wr_array(1),
             rd_addr => w_rd_addr,
             wr_addr => w_wr_addr(1),
-            data_in => r_data_in,
-            data_out => r_data_out(1)
+            data_in => w_ram_data_in,
+            data_out => w_ram_data_out(1)
         );
 
     w_rd_addr <= std_logic_vector(to_unsigned(c_rd_column, C_ADDR_WIDTH));
@@ -337,16 +335,18 @@ begin
     w_asi_input_data_ready <= not w_processing;
     asi_input_data_ready <= w_asi_input_data_ready;
 
-    w_wr_array(0) <= r_wr and not r_ram_filled(0) and not r_ram_sel;
-    w_wr_array(1) <= r_wr and not r_ram_filled(1) and r_ram_sel;
+    w_wr_array(0) <= w_wr and not r_ram_filled(0) and not r_ram_sel;
+    w_wr_array(1) <= w_wr and not r_ram_filled(1) and r_ram_sel;
 
     COUNT: process (clk) is
+        variable v_width   : integer range 0 to 2**C_DIM_WIDTH;
     begin
         if rising_edge(clk) then
+            v_width  := to_integer(unsigned(r_width));
             -- Write address increment
             if w_wr_array(w_ram_sel)='1' then
                 c_wr_column(w_ram_sel) <= c_wr_column(w_ram_sel) + 1;
-                if c_wr_column(w_ram_sel) = w_width-1 then
+                if c_wr_column(w_ram_sel) = v_width-1 then
                     c_wr_column(w_ram_sel) <= 0;
                     r_ram_filled(w_ram_sel) <= '1';
                 end if;
@@ -369,9 +369,10 @@ begin
     end process COUNT;
 
     RAM_SELECT: process (clk) is
+        variable v_width   : integer range 0 to 2**C_DIM_WIDTH;
     begin
         if rising_edge(clk) then
-            if c_wr_column(w_ram_sel) = w_width-1 and w_wr_array(w_ram_sel)='1' then
+            if c_wr_column(w_ram_sel) = v_width-1 and w_wr_array(w_ram_sel)='1' then
                 r_ram_sel <= not r_ram_sel;
             end if;
             if reset='1' then
@@ -380,8 +381,8 @@ begin
         end if;
     end process RAM_SELECT;
 
-    r_data_in <= asi_input_data_data;
-    r_wr <= (asi_input_data_valid and w_asi_input_data_ready);
+    w_ram_data_in <= asi_input_data_data;
+    w_wr <= (asi_input_data_valid and w_asi_input_data_ready);
 
     -- TODO: Auto-generated HDL template
 
