@@ -211,8 +211,12 @@ begin
     end process PROCESSING;
 
     COL_SELECT: process(current_state, r_read_status, r_floor_x) is
+        variable v_width    : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
+        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
     begin
         if current_state = st_read then
+            v_width := to_integer(unsigned(r_width));
+            v_height := to_integer(unsigned(r_height));
             case r_read_status is
                 when "1000" =>
                     c_rd_column <= r_floor_x;
@@ -391,6 +395,7 @@ begin
         variable v_width   : integer range 0 to 2**C_DIM_WIDTH;
     begin
         if rising_edge(clk) then
+            v_width  := to_integer(unsigned(r_width));
             if c_wr_column(w_ram_sel) = v_width-1 and w_wr_array(w_ram_sel)='1' then
                 r_ram_sel <= not r_ram_sel;
             end if;
