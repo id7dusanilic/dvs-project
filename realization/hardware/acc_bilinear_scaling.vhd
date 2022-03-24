@@ -268,6 +268,25 @@ begin
         end if;
     end process READ_DATA_BUFFERS;
 
+    OUTPUT_DIMS_CALC: process(clk) is
+        variable v_sx       : integer range 0 to 2**C_MM_DATA_WIDTH - 1;
+        variable v_sy       : integer range 0 to 2**C_MM_DATA_WIDTH - 1;
+        variable v_width    : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
+        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
+    begin
+        if rising_edge(clk) then
+            v_width := to_integer(unsigned(r_width));
+            v_sx := to_integer(unsigned(r_sx));
+
+            r_width_out <= (v_width * v_sx) / 2**5;
+
+            v_height := to_integer(unsigned(r_height));
+            v_sy := to_integer(unsigned(r_sy));
+
+            r_height_out <= (v_height * v_sy) / 2**5;
+        end if;
+    end process OUTPUT_DIMS_CALC;
+
     WRITE_MM: process(clk) is
         variable v_address : integer range 0 to 2**C_MM_ADDR_WIDTH - 1;
     begin
