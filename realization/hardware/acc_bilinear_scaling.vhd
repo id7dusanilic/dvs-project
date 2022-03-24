@@ -187,17 +187,17 @@ begin
                 v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
                 r_x <= v_x when (v_floor_x < v_width) else (others => '0');
 
-                v_y := std_logic_vector(unsigned(r_y) + unsigned(r_sy_inv));
-                v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
-                v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
-                r_y <= v_y when (v_floor_y < v_height) else (others => '0');
-
                 v_x_out := c_x_out + 1;
                 c_x_out <= v_x_out when (v_x_out <= r_width_out-1) else 0;
 
                 if c_x_out=r_width_out-1 then
                     v_y_out := c_y_out + 1;
                     c_y_out <= v_y_out when (v_y_out <= r_height_out-1) else 0;
+
+                    v_y := std_logic_vector(unsigned(r_y) + unsigned(r_sy_inv));
+                    v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
+                    v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
+                    r_y <= v_y when (v_floor_y < v_height) else (others => '0');
                 end if;
 
             end if;
