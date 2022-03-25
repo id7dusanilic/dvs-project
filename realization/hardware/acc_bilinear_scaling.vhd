@@ -28,6 +28,9 @@ entity acc_bilinear_scaling is
 end entity acc_bilinear_scaling;
 
 architecture rtl of acc_bilinear_scaling is
+    -- Amount of delay from the start of calculation to ASO output
+    constant C_VALID_DELAY  : natural := 3;
+
     -- Arrays declared for RAM signals of both RAMs
     type ram_data_t     is array (0 to 1) of std_logic_vector(C_DATA_WIDTH-1 downto 0);
     type ram_addr_t     is array (0 to 1) of std_logic_vector(C_ADDR_WIDTH-1 downto 0);
@@ -85,18 +88,20 @@ architecture rtl of acc_bilinear_scaling is
     signal r_floor_x1       : integer range 0 to 2**C_DIM_WIDTH-1;
     signal r_floor_y1       : integer range 0 to 2**C_DIM_WIDTH-1;
 
+    signal r_alpha_y_d1     : integer range 0 to 2**C_NFRAC-1;
+
     -- Image coordinates signals
     signal r_x              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
     signal r_y              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
     signal w_x_inc          : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
     signal w_floor_x_inc    : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
 
-    signal r_subp_topleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
-    signal r_subp_botleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
-    signal r_subp_topright  : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
-    signal r_subp_botright  : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH+1)-1;
-    signal r_subp_top       : integer range 0 to 2**(C_NFRAC+2*C_DATA_WIDTH+1)-1;
-    signal r_subp_bot       : integer range 0 to 2**(C_NFRAC+2*C_DATA_WIDTH+1)-1;
+    signal r_subp_topleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
+    signal r_subp_botleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
+    signal r_subp_topright  : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
+    signal r_subp_botright  : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
+    signal r_subp_top       : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
+    signal r_subp_bot       : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_prod           : std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
     -- Flag indicating that all pixels that need current group of pixels
@@ -143,6 +148,9 @@ begin
     r_alpha_y <= to_integer(unsigned(r_y(C_NFRAC-1 downto 0)));
     r_floor_x <= to_integer(unsigned(r_x(r_x'high downto C_NFRAC)));
     r_floor_y <= to_integer(unsigned(r_y(r_y'high downto C_NFRAC)));
+
+    aso_output_data_data <= r_prod;
+    aso_output_data_valid <= r_valid(0);
 
     -- Sequential state change
     CONTROL_STATE: process(clk) is
@@ -204,6 +212,11 @@ begin
         if rising_edge(clk) then
             v_width  := to_integer(unsigned(w_width));
             v_height := to_integer(unsigned(w_height));
+
+            r_valid <= '0' & r_valid(r_valid'high downto 1);
+
+            r_alpha_y_d1 <= r_alpha_y;
+
             if current_state = st_process then
                 v_x := std_logic_vector(unsigned(r_x) + unsigned(w_sx_inc));
                 v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
@@ -225,16 +238,25 @@ begin
 
                 -- TODO Calculation itself
                 r_subp_topleft <= (2**C_NFRAC - r_alpha_x) * r_top(0);
-                r_subp_botleft <= (2**C_NFRAC - r_alpha_x) * r_bottom(1);
-                r_subp_topright <= r_alpha_x * r_top(0);
+                r_subp_botleft <= (2**C_NFRAC - r_alpha_x) * r_bottom(0);
+                r_subp_topright <= r_alpha_x * r_top(1);
                 r_subp_botright <= r_alpha_x * r_bottom(1);
 
+                r_valid <= '1' & r_valid(r_valid'high downto 1);
             end if;
-            r_subp_top <= (2**C_NFRAC - r_alpha_y) * (r_subp_topleft + r_subp_topright) / 2**C_NFRAC;
-            r_subp_bot <= r_alpha_y * (r_subp_botleft + r_subp_botright) / 2**C_NFRAC;
+            r_subp_top <= (2**C_NFRAC - r_alpha_y_d1) * (r_subp_topleft + r_subp_topright) / 2**C_NFRAC;
+            r_subp_bot <= r_alpha_y_d1 * (r_subp_botleft + r_subp_botright) / 2**C_NFRAC;
 
             r_prod <= std_logic_vector(to_unsigned((r_subp_top + r_subp_bot) / 2**C_NFRAC, C_DATA_WIDTH));
             if reset='1' then
+                r_subp_topleft <= 0;
+                r_subp_botleft <= 0;
+                r_subp_topright <= 0;
+                r_subp_botright <= 0;
+                r_subp_top <= 0;
+                r_subp_bot <= 0;
+                r_prod <= (others => '0');
+                r_valid <= (others => '0');
                 r_x <= (others => '0');
                 r_y <= (others => '0');
                 c_x_out <= 0;
@@ -388,8 +410,6 @@ begin
     params_waitrequest <= '0';
 
     -- TODO: Auto-generated HDL template
-
-    aso_output_data_data <= "00000000";
 
     aso_output_data_startofpacket <= '0';
 
