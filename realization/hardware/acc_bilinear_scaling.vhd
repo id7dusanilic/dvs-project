@@ -239,10 +239,14 @@ begin
     begin
         v_ram_sel := 0 when w_ram_sel='0' else 1;
         if c_x_out = r_width_out-1 then
-            r_ram_reset(v_ram_sel) <= '1';
             if c_y_out = r_height_out-1 then
                 r_ram_reset <= (others => '1');
+            else
+                r_ram_reset <= (others => '0');
             end if;
+            r_ram_reset(v_ram_sel) <= '1';
+        else
+            r_ram_reset <= (others => '0');
         end if;
     end process RAM_RESET_PROC;
 
