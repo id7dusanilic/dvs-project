@@ -372,12 +372,12 @@ begin
             v_width := to_integer(unsigned(w_width));
             v_sx := to_integer(unsigned(w_sx));
 
-            r_width_out <= (v_width * v_sx) / 2**5;
+            r_width_out <= (v_width * v_sx) / 2**C_SCALE_FRAC;
 
             v_height := to_integer(unsigned(w_height));
             v_sy := to_integer(unsigned(w_sy));
 
-            r_height_out <= (v_height * v_sy) / 2**5;
+            r_height_out <= (v_height * v_sy) / 2**C_SCALE_FRAC;
         end if;
     end process OUTPUT_DIMS_CALC;
 
