@@ -78,7 +78,7 @@ begin
         generic map (
             G_PACKET_SIZE       => 8,
             G_VALID_PROB        => 0.5,
-            G_FILE_TEST_VECTORS => "input.txt"
+            G_FILE_TEST_VECTORS => "input.txt",
             G_DATA_FORMAT       => "bin"
         )
         port map(

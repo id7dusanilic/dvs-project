@@ -30,13 +30,12 @@ begin
     valid <= r_rand_valid;
 
     process(reset, clk)
-        file f_test_vectors     : text open read_mode is G_FILE_TEST_VECTORS;
+        file f_test_vectors     : text;
         variable v_input_line   : line;
         variable v_test_vector  : std_logic_vector(data'range);
         variable seed1          : positive;
         variable seed2          : positive;
         variable rand           : real;
-        variable started : std_logic := '0';
     begin
         if (reset = '1') then
             c_packet_data <= 0;
@@ -45,21 +44,20 @@ begin
             last <= '0';
             r_done_transmitting <= '0';
 
+            file_open(f_test_vectors, G_FILE_TEST_VECTORS, read_mode);
+            readline(f_test_vectors, v_input_line);
+            if G_DATA_FORMAT="bin" then
+                read(v_input_line, v_test_vector);
+            elsif G_DATA_FORMAT="hex" then
+                hread(v_input_line, v_test_vector);
+            else
+                assert false report "Invalid data format" severity error;
+            end if;
+            data <= v_test_vector;
+
             seed1 := 123;
             seed2 := 456;
 
-            if started='0' then
-                readline(f_test_vectors, v_input_line);
-                if G_DATA_FORMAT="bin" then
-                    read(v_input_line, v_test_vector);
-                elsif G_DATA_FORMAT="hex" then
-                    hread(v_input_line, v_test_vector);
-                else
-                    assert false report "Invalid data format" severity error;
-                end if;
-                data <= v_test_vector;
-                started := '1';
-            end if;
         elsif (rising_edge(clk)) then
 
             if (r_done_transmitting = '0') then

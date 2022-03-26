@@ -104,6 +104,8 @@ architecture rtl of acc_bilinear_scaling is
     signal r_subp_bot       : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_prod           : std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
+    signal r_valid          : std_logic_vector(C_VALID_DELAY-1 downto 0);
+
     -- Flag indicating that all pixels that need current group of pixels
     -- are processed and new group of pixels can be read
     signal w_proc_flag      : std_logic;
@@ -208,46 +210,60 @@ begin
 
         variable v_width    : integer range 0 to 2**C_DIM_WIDTH;
         variable v_height   : integer range 0 to 2**C_DIM_WIDTH;
+
+        variable v_top      : row_data_t;
+        variable v_bottom   : row_data_t;
     begin
         if rising_edge(clk) then
             v_width  := to_integer(unsigned(w_width));
             v_height := to_integer(unsigned(w_height));
 
-            r_valid <= '0' & r_valid(r_valid'high downto 1);
-
             r_alpha_y_d1 <= r_alpha_y;
 
-            if current_state = st_process then
-                v_x := std_logic_vector(unsigned(r_x) + unsigned(w_sx_inc));
-                v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
-                v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
-                r_x <= v_x when (v_floor_x < v_width) else (others => '0');
+            -- Variables initialized to current values because they're used for determining v_top and v_bottom
+            v_x := std_logic_vector(unsigned(r_x));
+            v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
+            v_y := std_logic_vector(unsigned(r_y));
+            v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
 
-                v_x_out := c_x_out + 1;
-                c_x_out <= v_x_out when (v_x_out <= r_width_out-1) else 0;
+            if aso_output_data_ready='1' then
+                r_valid <= '0' & r_valid(r_valid'high downto 1);
 
-                if c_x_out=r_width_out-1 then
-                    v_y_out := c_y_out + 1;
-                    c_y_out <= v_y_out when (v_y_out <= r_height_out-1) else 0;
+                if current_state=st_process then
+                    v_x := std_logic_vector(unsigned(r_x) + unsigned(w_sx_inc));
+                    v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
+                    v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
+                    r_x <= v_x when (v_floor_x < v_width and c_x_out/=r_width_out-1) else (others => '0');
 
-                    v_y := std_logic_vector(unsigned(r_y) + unsigned(w_sy_inc));
-                    v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
-                    v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
-                    r_y <= v_y when (v_floor_y < v_height) else (others => '0');
+                    v_x_out := c_x_out + 1;
+                    c_x_out <= v_x_out when (v_x_out <= r_width_out-1) else 0;
+
+                    if c_x_out=r_width_out-1 then
+                        v_y_out := c_y_out + 1;
+                        c_y_out <= v_y_out when (v_y_out <= r_height_out-1) else 0;
+
+                        v_y := std_logic_vector(unsigned(r_y) + unsigned(w_sy_inc));
+                        v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
+                        v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
+                        r_y <= v_y when (v_floor_y < v_height) else (others => '0');
+                    end if;
+
+                    v_top := r_top when v_floor_y /= v_height-1 else r_bottom;
+                    v_bottom := r_bottom;
+
+                    r_subp_topleft <= (2**C_NFRAC - r_alpha_x) * v_top(0);
+                    r_subp_botleft <= (2**C_NFRAC - r_alpha_x) * v_bottom(0);
+                    r_subp_topright <= r_alpha_x * v_top(1);
+                    r_subp_botright <= r_alpha_x * v_bottom(1);
+
+                    r_valid <= '1' & r_valid(r_valid'high downto 1);
                 end if;
 
-                -- TODO Calculation itself
-                r_subp_topleft <= (2**C_NFRAC - r_alpha_x) * r_top(0);
-                r_subp_botleft <= (2**C_NFRAC - r_alpha_x) * r_bottom(0);
-                r_subp_topright <= r_alpha_x * r_top(1);
-                r_subp_botright <= r_alpha_x * r_bottom(1);
+                r_subp_top <= (2**C_NFRAC - r_alpha_y_d1) * ((r_subp_topleft + r_subp_topright) / 2**C_NFRAC);
+                r_subp_bot <= r_alpha_y_d1 * ((r_subp_botleft + r_subp_botright) / 2**C_NFRAC);
 
-                r_valid <= '1' & r_valid(r_valid'high downto 1);
+                r_prod <= std_logic_vector(to_unsigned((r_subp_top + r_subp_bot) / 2**C_NFRAC, C_DATA_WIDTH));
             end if;
-            r_subp_top <= (2**C_NFRAC - r_alpha_y_d1) * (r_subp_topleft + r_subp_topright) / 2**C_NFRAC;
-            r_subp_bot <= r_alpha_y_d1 * (r_subp_botleft + r_subp_botright) / 2**C_NFRAC;
-
-            r_prod <= std_logic_vector(to_unsigned((r_subp_top + r_subp_bot) / 2**C_NFRAC, C_DATA_WIDTH));
             if reset='1' then
                 r_subp_topleft <= 0;
                 r_subp_botleft <= 0;
@@ -272,7 +288,7 @@ begin
     -- Generating w_proc_flag
     -- Current group of pixels is processed current state is st_process and new pixel is needed
     -- and the output was ready so the pipeline moved
-    w_proc_flag <= '1' when w_floor_x_inc>r_floor_x and current_state=st_process else '0';
+    w_proc_flag <= '1' when (w_floor_x_inc>r_floor_x or c_x_out=r_width_out-1) and current_state=st_process and aso_output_data_ready='1' else '0';
 
     -- Generating RAM rd signal
     w_ram_rd <= '1' when current_state=st_read else '0';

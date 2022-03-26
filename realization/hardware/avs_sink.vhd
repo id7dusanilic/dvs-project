@@ -34,7 +34,7 @@ begin
     ready <= r_rand_ready;
 
     process(reset, clk)
-        file f_output               : text open read_mode is G_FILE_OUTPUT;
+        file f_output               : text open write_mode is G_FILE_OUTPUT;
         variable v_output_line      : line;
         variable v_output_value     : std_logic_vector(data'range);
 
@@ -45,7 +45,7 @@ begin
         variable seed1              : positive;
         variable seed2              : positive;
         variable rand               : real;
-        variable started : std_logic := '0';
+        variable started            : std_logic := '0';
 
     begin
         if (reset = '1') then
@@ -123,7 +123,7 @@ begin
                     c_packet_data <= 0;
                 end if;
 
-                v_output_value  := data;
+                v_output_value := data;
                 if G_DATA_FORMAT="bin" then
                     write(v_output_line, data);
                 elsif G_DATA_FORMAT="hex" then
