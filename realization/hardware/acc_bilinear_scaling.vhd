@@ -95,6 +95,8 @@ architecture rtl of acc_bilinear_scaling is
     signal r_y              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
     signal w_x_inc          : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
     signal w_floor_x_inc    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
+    signal w_y_inc          : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
+    signal w_floor_y_inc    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
 
     signal r_subp_topleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_subp_botleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
@@ -109,6 +111,7 @@ architecture rtl of acc_bilinear_scaling is
     -- Flag indicating that all pixels that need current group of pixels
     -- are processed and new group of pixels can be read
     signal w_proc_flag      : std_logic;
+    signal w_need_new_row   : std_logic;
 
     -- Informs about the read status of current pixel group
     signal r_read_status    : std_logic_vector(3 downto 0);
@@ -284,11 +287,17 @@ begin
     -- Future coordinate values
     w_x_inc <= to_integer(unsigned(r_x)) + to_integer(unsigned(w_sx_inc));
     w_floor_x_inc <= w_x_inc / 2**C_NFRAC;
+    w_y_inc <= to_integer(unsigned(r_y)) + to_integer(unsigned(w_sy_inc));
+    w_floor_y_inc <= w_y_inc / 2**C_NFRAC;
 
     -- Generating w_proc_flag
     -- Current group of pixels is processed current state is st_process and new pixel is needed
     -- and the output was ready so the pipeline moved
     w_proc_flag <= '1' when (w_floor_x_inc>r_floor_x or c_x_out=r_width_out-1) and current_state=st_process and aso_output_data_ready='1' else '0';
+
+    -- New row is needed when next floor y value is greater the current, but only if the next floor y value
+    -- is in the range (not greater than image height)
+    w_need_new_row <= '1' when w_floor_y_inc>r_floor_y and w_floor_y_inc<to_integer(unsigned(w_height))-1 else '0';
 
     -- Generating RAM rd signal
     w_ram_rd <= '1' when current_state=st_read else '0';
@@ -298,13 +307,12 @@ begin
         variable v_ram_sel : integer range 0 to 1;
     begin
         v_ram_sel := 0 when w_ram_sel='0' else 1;
-        if c_x_out = r_width_out-1 then
-            if c_y_out = r_height_out-1 then
-                r_ram_reset <= (others => '1');
-            else
-                r_ram_reset <= (others => '0');
-            end if;
+        -- If at the end of row and new row is needed for computation
+        if c_x_out=r_width_out-1 and w_need_new_row='1' then
             r_ram_reset(v_ram_sel) <= '1';
+        -- If at the end of last output row
+        elsif c_x_out=r_width_out-1 and c_y_out = r_height_out-1 then
+            r_ram_reset <= (others => '1');
         else
             r_ram_reset <= (others => '0');
         end if;
