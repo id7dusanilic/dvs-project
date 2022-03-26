@@ -150,7 +150,7 @@ image_t bilinear_scaling_sw(image_t input, float sx_float, float sy_float) {
     uint8_t sx = to_fixed_point(sx_float, 3, 5);
     uint8_t sy = to_fixed_point(sy_float, 3, 5);
 
-    unsigned nfrac = 8;
+    unsigned nfrac = 12;
     image_t output = image_alloc((input.height * ((sy==0)?(8<<5):sy)) >> 5, (input.width * ((sx==0)?(8<<5):sx)) >> 5);
 
     uint32_t x = 0;
@@ -164,7 +164,6 @@ image_t bilinear_scaling_sw(image_t input, float sx_float, float sy_float) {
     uint32_t floor_x, floor_y;
     uint32_t floor_x1, floor_y1;
     uint32_t interp_y0, interp_y1;
-    uint64_t wide_output;
 
     for(int v=0; v<output.height; v++) {
         alpha_y = y & frac_mask;
@@ -177,11 +176,10 @@ image_t bilinear_scaling_sw(image_t input, float sx_float, float sy_float) {
             floor_x = (x - alpha_x) >> nfrac;
             floor_x1 = (floor_x >= input.width-1) ? floor_x : floor_x+1;
 
-            interp_y0 = alpha_x * input.data[floor_y][floor_x1] + ((1<<nfrac)-alpha_x) * input.data[floor_y][floor_x];
-            interp_y1 = alpha_x * input.data[floor_y1][floor_x1] + ((1<<nfrac)-alpha_x) * input.data[floor_y1][floor_x];
+            interp_y0 = (alpha_x * input.data[floor_y][floor_x1] + ((1<<nfrac)-alpha_x) * input.data[floor_y][floor_x]) >> nfrac;
+            interp_y1 = (alpha_x * input.data[floor_y1][floor_x1] + ((1<<nfrac)-alpha_x) * input.data[floor_y1][floor_x]) >> nfrac;
 
-            wide_output = (alpha_y * interp_y1 + ((1<<nfrac)-alpha_y) * interp_y0);
-            output.data[v][u] = wide_output >> (2*nfrac);
+            output.data[v][u] = (alpha_y * interp_y1 + ((1<<nfrac)-alpha_y) * interp_y0) >> nfrac;
             x += increment_x;
         }
         y += increment_y;
