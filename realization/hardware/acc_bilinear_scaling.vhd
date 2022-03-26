@@ -261,7 +261,7 @@ begin
                     r_subp_botright <= r_alpha_x * v_bottom(1);
 
                     r_valid <= '1' & r_valid(r_valid'high downto 1);
-                    if c_x_out=r_width_out-1 and c_y_out=r_height_out-1 then
+                    if c_x_out=r_width_out-1 then
                         r_last <= '1' & r_last(r_last'high downto 1);
                     end if;
                 end if;
