@@ -1,6 +1,7 @@
 library IEEE;
 use IEEE.std_logic_1164.all;
 use IEEE.numeric_std.all;
+use IEEE.math_real.all;
 
 use work.acc_bilinear_scaling_PK.all;
 
@@ -21,8 +22,8 @@ architecture Test of acc_bilinear_scaling_TB is
     signal aso_output_data_startofpacket : std_logic := '0';
     signal aso_output_data_valid : std_logic := '0';
     signal aso_output_data_ready : std_logic := '0';
-    signal aso_output_data_data_err : std_logic := '0';
-    signal aso_output_data_last_err : std_logic := '0';
+    signal aso_output_data_data_err : std_logic := '1';
+    signal aso_output_data_last_err : std_logic := '1';
     signal params_address : std_logic_vector(3 downto 0)  := (others => '0');
     signal params_read : std_logic := '0';
     signal params_write : std_logic := '0';
@@ -41,10 +42,10 @@ architecture Test of acc_bilinear_scaling_TB is
     constant C_WIDTH  : natural := 20;
     constant C_HEIGHT : natural := 20;
 
-    constant C_SX_FIXED     : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( sx * 2**5 ), C_MM_DATA_WIDTH));
-    constant C_SY_FIXED     : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( sy * 2**5 ), C_MM_DATA_WIDTH));
-    constant C_SX_INV_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( sx_inv * 2**C_NFRAC ), 2*C_MM_DATA_WIDTH));
-    constant C_SY_INV_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( sy_inv * 2**C_NFRAC ), 2*C_MM_DATA_WIDTH));
+    constant C_SX_FIXED     : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sx * 2**C_SCALE_FRAC) ), C_MM_DATA_WIDTH));
+    constant C_SY_FIXED     : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sy * 2**C_SCALE_FRAC) ), C_MM_DATA_WIDTH));
+    constant C_SX_INV_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sx_inv * 2**C_NFRAC) ), 2*C_MM_DATA_WIDTH));
+    constant C_SY_INV_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sy_inv * 2**C_NFRAC) ), 2*C_MM_DATA_WIDTH));
 
     constant C_WIDTH_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(C_WIDTH, 2*C_MM_DATA_WIDTH));
     constant C_HEIGHT_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(C_HEIGHT, 2*C_MM_DATA_WIDTH));
@@ -78,6 +79,7 @@ begin
             G_PACKET_SIZE       => 8,
             G_VALID_PROB        => 0.5,
             G_FILE_TEST_VECTORS => "input.txt"
+            G_DATA_FORMAT       => "bin"
         )
         port map(
             clk => clk,
@@ -86,6 +88,25 @@ begin
             valid => asi_input_data_valid,
             ready => asi_input_data_ready,
             last => asi_input_data_eop
+        );
+
+    AVS_SINK_i0 : entity work.avs_sink
+        generic map (
+            G_PACKET_SIZE       => 8,
+            G_READY_PROB        => 0.5,
+            G_FILE_OUTPUT       => "output.txt",
+            G_FILE_OUTPUT_REF   => "output_ref.txt",
+            G_DATA_FORMAT       => "bin"
+        )
+        port map(
+            clk => clk,
+            reset => reset,
+            data => aso_output_data_data,
+            ready => aso_output_data_ready,
+            valid => aso_output_data_valid,
+            last => aso_output_data_endofpacket,
+            error_in_data => aso_output_data_data_err,
+            error_in_last => aso_output_data_last_err
         );
 
     clk <= not clk after C_TCLK/2;
@@ -146,7 +167,6 @@ begin
 
         params_write <= '0';
         reset_source <= '0';
-        wait for 3*C_TCLK;
         wait;
     end process;
 
