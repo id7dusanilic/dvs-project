@@ -106,7 +106,7 @@ architecture rtl of acc_bilinear_scaling is
 
     -- Flag indicating that all pixels that need current group of pixels
     -- are processed and new group of pixels can be read
-    signal r_proc_flag      : std_logic;
+    signal w_proc_flag      : std_logic;
 
     -- Informs about the read status of current pixel group
     signal r_read_status    : std_logic_vector(3 downto 0);
@@ -164,7 +164,7 @@ begin
     end process CONTROL_STATE;
 
     -- Determines next state
-    NEXT_STATE_PROCESS: process(current_state, r_proc_flag, w_ram_filled, r_read_status) is
+    NEXT_STATE_PROCESS: process(current_state, w_proc_flag, w_ram_filled, r_read_status) is
     begin
         case current_state is
             when st_wait =>
@@ -180,7 +180,7 @@ begin
                     next_state <= st_process;
                 end if;
             when st_process =>
-                if r_proc_flag = '0' then
+                if w_proc_flag = '0' then
                     next_state <= st_process;
                 else
                     if c_x_out < r_width_out-1 then
@@ -265,10 +265,14 @@ begin
         end if;
     end process PROCESSING;
 
-    -- Generating r_proc_flag
+    -- Future coordinate values
     w_x_inc <= to_integer(unsigned(r_x)) + to_integer(unsigned(w_sx_inc));
     w_floor_x_inc <= w_x_inc / 2**C_NFRAC;
-    r_proc_flag <= '1' when w_floor_x_inc>r_floor_x and current_state=st_process else '0';
+
+    -- Generating w_proc_flag
+    -- Current group of pixels is processed current state is st_process and new pixel is needed
+    -- and the output was ready so the pipeline moved
+    w_proc_flag <= '1' when w_floor_x_inc>r_floor_x and current_state=st_process else '0';
 
     -- Generating RAM rd signal
     w_ram_rd <= '1' when current_state=st_read else '0';
