@@ -12,7 +12,7 @@ package acc_bilinear_scaling_PK is
 
     constant C_DIM_WIDTH        : natural := 16;
 
-    constant C_ADDR_WIDTH       : natural := 5;
+    constant C_ADDR_WIDTH       : natural := 16;
     constant C_DATA_WIDTH       : natural := 8;
     constant C_RAM_DEPTH        : natural := 2**C_ADDR_WIDTH;
 
