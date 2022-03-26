@@ -237,22 +237,42 @@ begin
                     v_x := std_logic_vector(unsigned(r_x) + unsigned(w_sx_inc));
                     v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
                     v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
-                    r_x <= v_x when (v_floor_x < v_width and c_x_out/=r_width_out-1) else (others => '0');
+                    if (v_floor_x < v_width and c_x_out/=r_width_out-1) then
+                        r_x <= v_x;
+                    else
+                        r_x <= (others => '0');
+                    end if;
 
                     v_x_out := c_x_out + 1;
-                    c_x_out <= v_x_out when (v_x_out <= r_width_out-1) else 0;
+                    if (v_x_out <= r_width_out-1) then
+                        c_x_out <= v_x_out;
+                    else
+                        c_x_out <= 0;
+                    end if;
 
                     if c_x_out=r_width_out-1 then
                         v_y := std_logic_vector(unsigned(r_y) + unsigned(w_sy_inc));
                         v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
                         v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
-                        r_y <= v_y when (v_floor_y < v_height and c_y_out/=r_height_out-1) else (others => '0');
+                        if (v_floor_y < v_height and c_y_out/=r_height_out-1) then
+                            r_y <= v_y;
+                        else
+                            r_y <= (others => '0');
+                        end if;
 
                         v_y_out := c_y_out + 1;
-                        c_y_out <= v_y_out when (v_y_out <= r_height_out-1) else 0;
+                        if (v_y_out <= r_height_out-1) then
+                            c_y_out <= v_y_out;
+                        else
+                            c_y_out <= 0;
+                        end if;
                     end if;
 
-                    v_top := r_top when v_floor_y /= v_height-1 else r_bottom;
+                    if v_floor_y /= v_height-1 then
+                        v_top := r_top;
+                    else
+                        v_top := r_bottom;
+                    end if;
                     v_bottom := r_bottom;
 
                     r_subp_topleft <= (2**C_NFRAC - r_alpha_x) * v_top(0);
@@ -296,6 +316,7 @@ begin
     w_y_inc <= to_integer(unsigned(r_y)) + to_integer(unsigned(w_sy_inc));
     w_floor_y_inc <= w_y_inc / 2**C_NFRAC;
 
+
     -- Generating w_proc_flag
     -- Current group of pixels is processed current state is st_process and new pixel is needed
     -- and the output was ready so the pipeline moved
@@ -312,7 +333,11 @@ begin
     RAM_RESET_PROC: process(c_x_out, c_y_out, r_width_out, r_height_out, w_ram_sel) is
         variable v_ram_sel : integer range 0 to 1;
     begin
-        v_ram_sel := 0 when w_ram_sel='0' else 1;
+        if w_ram_sel='0' then
+            v_ram_sel := 0;
+        else
+            v_ram_sel := 1;
+        end if;
         -- If at the end of row and new row is needed for computation
         if c_x_out=r_width_out-1 and w_need_new_row='1' then
             r_ram_reset(v_ram_sel) <= '1';
@@ -364,9 +389,21 @@ begin
         variable v_ram_sel      : integer range 0 to 1;
     begin
         if rising_edge(clk) then
-            v_sel_bottom := 1 when v_ram_sel=0 else 0;
-            v_sel_top    := 0 when v_ram_sel=0 else 1;
-            v_ram_sel    := 0 when w_ram_sel='0' else 1;
+            if v_ram_sel=0 then
+                v_sel_bottom := 1;
+            else
+                v_sel_bottom := 0;
+            end if;
+            if v_ram_sel=0 then
+                v_sel_top := 0;
+            else
+                v_sel_top := 1;
+            end if;
+            if w_ram_sel='0' then
+                v_ram_sel := 0;
+            else
+                v_ram_sel := 1;
+            end if;
             if current_state = st_read then
                 case r_read_status is
                     when "1000" =>

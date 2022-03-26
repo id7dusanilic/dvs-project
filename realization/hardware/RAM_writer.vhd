@@ -105,7 +105,11 @@ begin
         if rising_edge(clk) then
             -- Variable init
             v_row_length := to_integer(unsigned(row_length));
-            v_ram_sel := 1 when r_ram_sel='1' else 0;
+            if r_ram_sel='1' then
+                v_ram_sel := 1;
+            else
+                v_ram_sel := 0;
+            end if;
 
             -- If writing to currently selected RAM increment write address
             if w_wr_array(v_ram_sel)='1' then
@@ -130,7 +134,11 @@ begin
         if rising_edge(clk) then
             -- Variable init
             v_row_length := to_integer(unsigned(row_length));
-            v_ram_sel := 1 when r_ram_sel='1' else 0;
+            if r_ram_sel='1' then
+                v_ram_sel := 1;
+            else
+                v_ram_sel := 0;
+            end if;
 
             -- If writing to currently selected RAM
             if w_wr_array(v_ram_sel)='1' then
@@ -162,7 +170,11 @@ begin
         if rising_edge(clk) then
             -- Variable init
             v_row_length := to_integer(unsigned(row_length));
-            v_ram_sel := 1 when r_ram_sel='1' else 0;
+            if r_ram_sel='1' then
+                v_ram_sel := 1;
+            else
+                v_ram_sel := 0;
+            end if;
 
             -- If writing at the end of a row, toggle ram_sel
             if w_wr_array(v_ram_sel)='1' and c_wr_addr(v_ram_sel) = v_row_length-1 then
