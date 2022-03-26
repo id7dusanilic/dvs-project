@@ -107,6 +107,7 @@ architecture rtl of acc_bilinear_scaling is
     signal r_prod           : std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
     signal r_valid          : std_logic_vector(C_VALID_DELAY-1 downto 0);
+    signal r_last           : std_logic_vector(C_VALID_DELAY-1 downto 0);
 
     -- Flag indicating that all pixels that need current group of pixels
     -- are processed and new group of pixels can be read
@@ -156,6 +157,7 @@ begin
 
     aso_output_data_data <= r_prod;
     aso_output_data_valid <= r_valid(0);
+    aso_output_data_endofpacket <= r_last(0);
 
     -- Sequential state change
     CONTROL_STATE: process(clk) is
@@ -221,8 +223,6 @@ begin
             v_width  := to_integer(unsigned(w_width));
             v_height := to_integer(unsigned(w_height));
 
-            r_alpha_y_d1 <= r_alpha_y;
-
             -- Variables initialized to current values because they're used for determining v_top and v_bottom
             v_x := std_logic_vector(unsigned(r_x));
             v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
@@ -231,6 +231,7 @@ begin
 
             if aso_output_data_ready='1' then
                 r_valid <= '0' & r_valid(r_valid'high downto 1);
+                r_last <= '0' & r_last(r_last'high downto 1);
 
                 if current_state=st_process then
                     v_x := std_logic_vector(unsigned(r_x) + unsigned(w_sx_inc));
@@ -242,13 +243,13 @@ begin
                     c_x_out <= v_x_out when (v_x_out <= r_width_out-1) else 0;
 
                     if c_x_out=r_width_out-1 then
-                        v_y_out := c_y_out + 1;
-                        c_y_out <= v_y_out when (v_y_out <= r_height_out-1) else 0;
-
                         v_y := std_logic_vector(unsigned(r_y) + unsigned(w_sy_inc));
                         v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
                         v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
-                        r_y <= v_y when (v_floor_y < v_height) else (others => '0');
+                        r_y <= v_y when (v_floor_y < v_height and c_y_out/=r_height_out-1) else (others => '0');
+
+                        v_y_out := c_y_out + 1;
+                        c_y_out <= v_y_out when (v_y_out <= r_height_out-1) else 0;
                     end if;
 
                     v_top := r_top when v_floor_y /= v_height-1 else r_bottom;
@@ -260,10 +261,15 @@ begin
                     r_subp_botright <= r_alpha_x * v_bottom(1);
 
                     r_valid <= '1' & r_valid(r_valid'high downto 1);
+                    if c_x_out=r_width_out-1 and c_y_out=r_height_out-1 then
+                        r_last <= '1' & r_last(r_last'high downto 1);
+                    end if;
                 end if;
 
                 r_subp_top <= (2**C_NFRAC - r_alpha_y_d1) * ((r_subp_topleft + r_subp_topright) / 2**C_NFRAC);
                 r_subp_bot <= r_alpha_y_d1 * ((r_subp_botleft + r_subp_botright) / 2**C_NFRAC);
+
+                r_alpha_y_d1 <= r_alpha_y;
 
                 r_prod <= std_logic_vector(to_unsigned((r_subp_top + r_subp_bot) / 2**C_NFRAC, C_DATA_WIDTH));
             end if;
@@ -437,10 +443,6 @@ begin
 
     params_waitrequest <= '0';
 
-    -- TODO: Auto-generated HDL template
-
     aso_output_data_startofpacket <= '0';
-
-    aso_output_data_endofpacket <= '0';
 
 end architecture rtl; -- of acc_bilinear_scaling
