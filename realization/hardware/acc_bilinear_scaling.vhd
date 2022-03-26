@@ -93,8 +93,8 @@ architecture rtl of acc_bilinear_scaling is
     -- Image coordinates signals
     signal r_x              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
     signal r_y              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
-    signal w_x_inc          : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
-    signal w_floor_x_inc    : integer range 0 to 2**(C_DIM_WIDTH+1)-1;
+    signal w_x_inc          : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
+    signal w_floor_x_inc    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
 
     signal r_subp_topleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_subp_botleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
