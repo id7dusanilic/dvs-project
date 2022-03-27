@@ -65,8 +65,6 @@ int main() {
 
         unsigned seg_width = dr_x - ul_x + 1;
         unsigned seg_height = dr_y - ul_y + 1;
-        unsigned out_width = seg_width * sx;
-        unsigned out_height = seg_height * sy;
 
         /* Extract segment from the input image. */
         image_t input_segment = extract_segment(image_in, ul_x, ul_y, seg_height, seg_width);
