@@ -7,7 +7,10 @@
 #include "altera_avalon_sgdma.h"
 #include "altera_avalon_sgdma_regs.h"
 #include "io.h"
+#include "system.h"
 
+#include "bilinear_scaling_hw.h"
+#include "software_model/bilinear_scaling.h"
 #include "software_model/utils.h"
 
 alt_sgdma_descriptor* descriptor_alloc(uint16_t number_of_buffers, void** allocated_memory) {
@@ -21,7 +24,7 @@ alt_sgdma_descriptor* descriptor_alloc(uint16_t number_of_buffers, void** alloca
     /* Save a pointer to the allocated memory. */
     *allocated_memory = temp_ptr;
 
-    /* Slide the pointer for proper allignment. */
+    /* Slide the pointer for proper alignment. */
     while((((uint32_t)temp_ptr) % ALTERA_AVALON_SGDMA_DESCRIPTOR_SIZE) != 0) {
         temp_ptr++;
     }
@@ -66,18 +69,32 @@ void create_receive_descriptors(alt_sgdma_descriptor* descriptors, image_t image
 
 image_t bilinear_scaling_hw(
             image_t input,
-            float sx,
-            float sy,
+            float sx_float,
+            float sy_float,
             alt_sgdma_dev* sgdma_in,
             alt_sgdma_dev* sgdma_out,
-            uint16_t* tx_done,
-            uint16_t* rx_done) {
+            volatile uint16_t* tx_done,
+            volatile uint16_t* rx_done) {
 
-    void* transmit_alloc;
-    void* receive_alloc;
+    /* Conversion to fixed point of the scaling factors. */
+    uint8_t sx = to_fixed_point(sx_float, BILINEAR_SCALING_SF_NINT, BILINEAR_SCALING_SF_NFRAC);
+    uint8_t sy = to_fixed_point(sy_float, BILINEAR_SCALING_SF_NINT, BILINEAR_SCALING_SF_NFRAC);
+
+    /* Corresponding float values of the scaling factors in fixed point. */
+    float sx_fx = from_fixed_point(sx, BILINEAR_SCALING_SF_NFRAC);
+    float sy_fx = from_fixed_point(sy, BILINEAR_SCALING_SF_NFRAC);
 
     /* Allocate output image memory. */
-    image_t output = image_alloc((uint32_t) (input.height * sy), (uint32_t) (input.width * sx));
+    image_t output = image_alloc(input.height*sy_fx, input.width*sx_fx);
+
+    /* Input image coordinates increment. */
+    /* Fixed point representation (BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC) */
+    uint16_t increment_x = to_fixed_point(1/sx_float, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
+    uint16_t increment_y = to_fixed_point(1/sy_float, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
+
+    /* Pointers to memory allocated for SGDMA descriptors. */
+    void* transmit_alloc;
+    void* receive_alloc;
 
     /* Allocate SGDMA descriptors. */
     alt_sgdma_descriptor* transmit_descriptors = descriptor_alloc(input.height, &transmit_alloc);
@@ -88,8 +105,12 @@ image_t bilinear_scaling_hw(
     create_receive_descriptors(receive_descriptors, output);
 
     /* Write params to the peripheral. */
-    /* TODO */
-    /* IOWR_16DIRECT(ACC_BILINEAR_FUNCTION_BASE, PARAM_ADDRESS, PARAM); */
+    IOWR_16DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_WIDTH_ADDR, input.width);
+    IOWR_16DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_HEIGHT_ADDR, input.height);
+    IOWR_16DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_SX_INV_ADDR, increment_x);
+    IOWR_16DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_SY_INV_ADDR, increment_y);
+    IOWR_8DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_SX_ADDR, sx);
+    IOWR_8DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_SY_ADDR, sy);
 
     /* Start SGDMAs. */
     if(alt_avalon_sgdma_do_async_transfer(sgdma_in, &transmit_descriptors[0]) != 0)

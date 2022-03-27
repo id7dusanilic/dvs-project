@@ -89,6 +89,7 @@ ELF := dvs22_g6_sw.elf
 C_SRCS += ../../../software_model/utils.c
 C_SRCS += main.c
 C_SRCS += bilinear_scaling_hw.c
+C_SRCS += ../../../software_model/bilinear_scaling.c
 CXX_SRCS :=
 ASM_SRCS :=
 

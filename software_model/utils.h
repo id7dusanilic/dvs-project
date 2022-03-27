@@ -22,14 +22,11 @@ image_t extract_segment(image_t image, uint32_t start_x, uint32_t start_y, uint1
 
 float from_fixed_point(uint32_t input, unsigned nfrac);
 uint32_t to_fixed_point(float input, unsigned nint, unsigned nfrac);
-float* get_scaled_coordinates(unsigned c, float sc);
 
 image_t bin2image(const char* filename);
 void save_to_pgm(const char* filename, image_t image);
 void save_to_bin(const char* filename, image_t image);
 
 image_t invert_image(image_t image);
-
-image_t bilinear_scaling_sw(image_t input, float sx, float sy);
 
 #endif
