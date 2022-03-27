@@ -42,6 +42,7 @@ set_fileset_property QUARTUS_SYNTH ENABLE_FILE_OVERWRITE_MODE false
 add_fileset_file acc_bilinear_scaling.vhd VHDL PATH acc_bilinear_scaling.vhd
 add_fileset_file RAM.vhd VHDL PATH RAM.vhd
 add_fileset_file acc_bilinear_scaling_PK.vhd VHDL PATH acc_bilinear_scaling_PK.vhd
+add_fileset_file RAM_writer.vhd VHDL PATH RAM_writer.vhd
 
 
 # 
