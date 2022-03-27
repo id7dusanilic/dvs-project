@@ -126,8 +126,8 @@ void get_input(
     scanf("%s", output_filename + ALTERA_HOSTFS_NAME_LEN);
     printf("\nEnter endpoint coordinates: ");
     scanf("%u %u %u %u", ul_x, ul_y, dr_x, dr_y);
-    assert((dr_x > ul_x) && (dr_y > ul_y));
+    assert((*dr_x > *ul_x) && (*dr_y > *ul_y));
     printf("\nEnter scaling factors: ");
     scanf("%f %f", sx, sy);
-    assert((sx > 0) && (sy > 0));
+    assert((*sx > 0) && (*sy > 0));
 }
