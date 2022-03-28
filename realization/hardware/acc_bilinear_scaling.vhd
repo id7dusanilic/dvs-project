@@ -85,8 +85,6 @@ architecture rtl of acc_bilinear_scaling is
     signal r_alpha_y        : integer range 0 to 2**C_NFRAC-1;
     signal r_floor_x        : integer range 0 to 2**C_DIM_WIDTH-1;
     signal r_floor_y        : integer range 0 to 2**C_DIM_WIDTH-1;
-    signal r_floor_x1       : integer range 0 to 2**C_DIM_WIDTH-1;
-    signal r_floor_y1       : integer range 0 to 2**C_DIM_WIDTH-1;
 
     signal r_alpha_y_d1     : integer range 0 to 2**C_NFRAC-1;
 
@@ -98,6 +96,7 @@ architecture rtl of acc_bilinear_scaling is
     signal w_floor_x_incremented    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
     signal w_floor_y_incremented    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
 
+    -- Calculation subproducts
     signal r_subp_topleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_subp_botleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_subp_topright  : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
