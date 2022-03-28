@@ -50,8 +50,8 @@ architecture rtl of acc_bilinear_scaling is
     signal register_map     : register_map_t;
     signal w_sx             : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
     signal w_sy             : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
-    signal w_sx_inc         : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
-    signal w_sy_inc         : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
+    signal w_x_inc          : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
+    signal w_y_inc          : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
     signal w_width          : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
     signal w_height         : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
 
@@ -93,10 +93,10 @@ architecture rtl of acc_bilinear_scaling is
     -- Image coordinates signals
     signal r_x              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
     signal r_y              : std_logic_vector(C_DIM_WIDTH+C_NFRAC-1 downto 0);
-    signal w_x_inc          : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
-    signal w_floor_x_inc    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
-    signal w_y_inc          : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
-    signal w_floor_y_inc    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
+    signal w_x_incremented  : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
+    signal w_y_incremented  : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
+    signal w_floor_x_incremented    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
+    signal w_floor_y_incremented    : integer range 0 to 2**(C_DIM_WIDTH+C_NFRAC+1)-1;
 
     signal r_subp_topleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_subp_botleft   : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
@@ -146,8 +146,8 @@ begin
     -- Mapping signals from register map to meaningful names
     w_sx     <= register_map(C_SX_ADDR);
     w_sy     <= register_map(C_SY_ADDR);
-    w_sx_inc <= register_map(C_SX_INV_ADDR+1) & register_map(C_SX_INV_ADDR);
-    w_sy_inc <= register_map(C_SY_INV_ADDR+1) & register_map(C_SY_INV_ADDR);
+    w_x_inc  <= register_map(C_X_INC_ADDR+1) & register_map(C_X_INC_ADDR);
+    w_y_inc  <= register_map(C_Y_INC_ADDR+1) & register_map(C_Y_INC_ADDR);
     w_width  <= register_map(C_WIDTH_ADDR+1) & register_map(C_WIDTH_ADDR);
     w_height <= register_map(C_HEIGHT_ADDR+1) & register_map(C_HEIGHT_ADDR);
 
@@ -239,7 +239,7 @@ begin
                 r_sop <= '0' & r_sop(r_sop'high downto 1);
 
                 if current_state=st_process then
-                    v_x := std_logic_vector(unsigned(r_x) + unsigned(w_sx_inc));
+                    v_x := std_logic_vector(unsigned(r_x) + unsigned(w_x_inc));
                     v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
                     v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
                     if (v_floor_x < v_width and c_x_out/=r_width_out-1) then
@@ -256,7 +256,7 @@ begin
                     end if;
 
                     if c_x_out=r_width_out-1 then
-                        v_y := std_logic_vector(unsigned(r_y) + unsigned(w_sy_inc));
+                        v_y := std_logic_vector(unsigned(r_y) + unsigned(w_y_inc));
                         v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
                         v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
                         if (v_floor_y < v_height and c_y_out/=r_height_out-1) then
@@ -319,20 +319,19 @@ begin
     end process PROCESSING;
 
     -- Future coordinate values
-    w_x_inc <= to_integer(unsigned(r_x)) + to_integer(unsigned(w_sx_inc));
-    w_floor_x_inc <= w_x_inc / 2**C_NFRAC;
-    w_y_inc <= to_integer(unsigned(r_y)) + to_integer(unsigned(w_sy_inc));
-    w_floor_y_inc <= w_y_inc / 2**C_NFRAC;
-
+    w_x_incremented <= to_integer(unsigned(r_x)) + to_integer(unsigned(w_x_inc));
+    w_y_incremented <= to_integer(unsigned(r_y)) + to_integer(unsigned(w_y_inc));
+    w_floor_x_incremented <= w_x_incremented / 2**C_NFRAC;
+    w_floor_y_incremented <= w_y_incremented / 2**C_NFRAC;
 
     -- Generating w_proc_flag
     -- Current group of pixels is processed current state is st_process and new pixel is needed
     -- and the output was ready so the pipeline moved
-    w_proc_flag <= '1' when (w_floor_x_inc>r_floor_x or c_x_out=r_width_out-1) and current_state=st_process and aso_output_data_ready='1' else '0';
+    w_proc_flag <= '1' when (w_floor_x_incremented>r_floor_x or c_x_out=r_width_out-1) and current_state=st_process and aso_output_data_ready='1' else '0';
 
     -- New row is needed when next floor y value is greater the current, but only if the next floor y value
     -- is in the range (not greater than image height)
-    w_need_new_row <= '1' when w_floor_y_inc>r_floor_y and w_floor_y_inc<to_integer(unsigned(w_height))-1 else '0';
+    w_need_new_row <= '1' when w_floor_y_incremented>r_floor_y and w_floor_y_incremented<to_integer(unsigned(w_height))-1 else '0';
 
     -- Generating RAM rd signal
     w_ram_rd <= '1' when current_state=st_read else '0';

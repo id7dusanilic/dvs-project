@@ -36,16 +36,16 @@ architecture Test of acc_bilinear_scaling_TB is
 
     constant sx : real := 4.0;
     constant sy : real := 4.0;
-    constant sx_inv : real := 1.0/sx;
-    constant sy_inv : real := 1.0/sy;
+    constant x_inc : real := 1.0/sx;
+    constant y_inc : real := 1.0/sy;
 
     constant C_WIDTH  : natural := 20;
     constant C_HEIGHT : natural := 20;
 
     constant C_SX_FIXED     : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sx * 2**C_SCALE_FRAC) ), C_MM_DATA_WIDTH));
     constant C_SY_FIXED     : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sy * 2**C_SCALE_FRAC) ), C_MM_DATA_WIDTH));
-    constant C_SX_INV_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sx_inv * 2**C_NFRAC) ), 2*C_MM_DATA_WIDTH));
-    constant C_SY_INV_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(sy_inv * 2**C_NFRAC) ), 2*C_MM_DATA_WIDTH));
+    constant C_X_INC_FIXED  : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(x_inc * 2**C_NFRAC) ), 2*C_MM_DATA_WIDTH));
+    constant C_Y_INC_FIXED  : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(integer( floor(y_inc * 2**C_NFRAC) ), 2*C_MM_DATA_WIDTH));
 
     constant C_WIDTH_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(C_WIDTH, 2*C_MM_DATA_WIDTH));
     constant C_HEIGHT_FIXED : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0) := std_logic_vector(to_unsigned(C_HEIGHT, 2*C_MM_DATA_WIDTH));
@@ -147,21 +147,21 @@ begin
         params_write <= '1';
         wait for C_TCLK;
 
-        avmm_addr_wr <= C_SX_INV_ADDR;
-        params_writedata <= C_SX_INV_FIXED(C_MM_DATA_WIDTH-1 downto 0);
+        avmm_addr_wr <= C_X_INC_ADDR;
+        params_writedata <= C_X_INC_FIXED(C_MM_DATA_WIDTH-1 downto 0);
         params_write <= '1';
         wait for C_TCLK;
-        avmm_addr_wr <= C_SX_INV_ADDR+1;
-        params_writedata <= C_SX_INV_FIXED(2*C_MM_DATA_WIDTH-1 downto C_MM_DATA_WIDTH);
+        avmm_addr_wr <= C_X_INC_ADDR+1;
+        params_writedata <= C_X_INC_FIXED(2*C_MM_DATA_WIDTH-1 downto C_MM_DATA_WIDTH);
         params_write <= '1';
         wait for C_TCLK;
 
-        avmm_addr_wr <= C_SY_INV_ADDR;
-        params_writedata <= C_SY_INV_FIXED(C_MM_DATA_WIDTH-1 downto 0);
+        avmm_addr_wr <= C_Y_INC_ADDR;
+        params_writedata <= C_Y_INC_FIXED(C_MM_DATA_WIDTH-1 downto 0);
         params_write <= '1';
         wait for C_TCLK;
-        avmm_addr_wr <= C_SY_INV_ADDR+1;
-        params_writedata <= C_SY_INV_FIXED(2*C_MM_DATA_WIDTH-1 downto C_MM_DATA_WIDTH);
+        avmm_addr_wr <= C_Y_INC_ADDR+1;
+        params_writedata <= C_Y_INC_FIXED(2*C_MM_DATA_WIDTH-1 downto C_MM_DATA_WIDTH);
         params_write <= '1';
         wait for C_TCLK;
 

@@ -21,8 +21,8 @@ package acc_bilinear_scaling_PK is
 
     constant C_SX_ADDR          : natural := 0;
     constant C_SY_ADDR          : natural := 1;
-    constant C_SX_INV_ADDR      : natural := 2;
-    constant C_SY_INV_ADDR      : natural := 4;
+    constant C_X_INC_ADDR       : natural := 2;
+    constant C_Y_INC_ADDR       : natural := 4;
     constant C_WIDTH_ADDR       : natural := 6;
     constant C_HEIGHT_ADDR      : natural := 8;
     constant C_NFRAC            : natural := 12;
