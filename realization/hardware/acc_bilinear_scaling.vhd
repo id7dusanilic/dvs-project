@@ -115,7 +115,7 @@ architecture rtl of acc_bilinear_scaling is
     signal w_need_new_row   : std_logic;
 
     -- Informs about the read status of current pixel group
-    signal r_read_status    : std_logic_vector(3 downto 0);
+    signal r_read_status    : std_logic_vector(2 downto 0);
 begin
 
     RAM_writer_i0: entity work.RAM_writer
@@ -358,17 +358,15 @@ begin
             v_width := to_integer(unsigned(w_width));
             v_height := to_integer(unsigned(w_height));
             case r_read_status is
-                when "1000" =>
+                when "100" =>
                     c_ram_rd_addr <= r_floor_x;
-                when "0100" =>
-                    c_ram_rd_addr <= r_floor_x;
-                when "0010" =>
+                when "010" =>
                     if r_floor_x=v_width-1 then
                         c_ram_rd_addr <= r_floor_x;
                     else
                         c_ram_rd_addr <= r_floor_x + 1;
                     end if;
-                when "0001" =>
+                when "001" =>
                     -- If at the end of the row, saturate
                     if r_floor_x=v_width-1 then
                         c_ram_rd_addr <= r_floor_x;
@@ -406,25 +404,23 @@ begin
             end if;
             if current_state = st_read then
                 case r_read_status is
-                    when "1000" =>
+                    when "100" =>
                         null;
-                    when "0100" =>
+                    when "010" =>
                         r_top(0)    <= to_integer(unsigned(w_ram_data_out(v_sel_top)));
                         r_bottom(0) <= to_integer(unsigned(w_ram_data_out(v_sel_bottom)));
-                    when "0010" =>
-                        null;
-                    when "0001" =>
+                    when "001" =>
                         r_top(1)    <= to_integer(unsigned(w_ram_data_out(v_sel_top)));
                         r_bottom(1) <= to_integer(unsigned(w_ram_data_out(v_sel_bottom)));
                     when others =>
                         null;
                 end case;
-                r_read_status <= r_read_status(0) & r_read_status(3 downto 1);
+                r_read_status <= r_read_status(0) & r_read_status(r_read_status'high downto 1);
             end if;
             if reset='1' then
                 r_top <= (others => 0);
                 r_bottom <= (others => 0);
-                r_read_status <= "1000";
+                r_read_status <= (r_read_status'high => '1', others => '0');
             end if;
         end if;
     end process READ_DATA_BUFFERS;
