@@ -76,7 +76,7 @@ begin
 
     AVS_SOURCE_i0 : entity work.avs_source
         generic map (
-            G_PACKET_SIZE       => 8,
+            G_PACKET_SIZE       => C_WIDTH,
             G_VALID_PROB        => 0.5,
             G_FILE_TEST_VECTORS => "input.txt",
             G_DATA_FORMAT       => "bin"
@@ -92,7 +92,7 @@ begin
 
     AVS_SINK_i0 : entity work.avs_sink
         generic map (
-            G_PACKET_SIZE       => 8,
+            G_PACKET_SIZE       => C_WIDTH * to_integer(unsigned(C_SX_FIXED)) / 2**C_SCALE_FRAC,
             G_READY_PROB        => 0.5,
             G_FILE_OUTPUT       => "output.txt",
             G_FILE_OUTPUT_REF   => "output_ref.txt",
