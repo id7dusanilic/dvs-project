@@ -106,8 +106,10 @@ architecture rtl of acc_bilinear_scaling is
     signal r_subp_bot       : integer range 0 to 2**(C_NFRAC+C_DATA_WIDTH)-1;
     signal r_prod           : std_logic_vector(C_DATA_WIDTH-1 downto 0);
 
+    -- Avalon Stream handshake delayed signals
     signal r_valid          : std_logic_vector(C_VALID_DELAY-1 downto 0);
     signal r_last           : std_logic_vector(C_VALID_DELAY-1 downto 0);
+    signal r_sop            : std_logic_vector(C_VALID_DELAY-1 downto 0);
 
     -- Flag indicating that all pixels that need current group of pixels
     -- are processed and new group of pixels can be read
@@ -155,9 +157,11 @@ begin
     r_floor_x <= to_integer(unsigned(r_x(r_x'high downto C_NFRAC)));
     r_floor_y <= to_integer(unsigned(r_y(r_y'high downto C_NFRAC)));
 
+    -- Avalon Stream handshake signals
     aso_output_data_data <= r_prod;
     aso_output_data_valid <= r_valid(0);
     aso_output_data_endofpacket <= r_last(0);
+    aso_output_data_startofpacket <= r_sop(0);
 
     -- Sequential state change
     CONTROL_STATE: process(clk) is
@@ -232,6 +236,7 @@ begin
             if aso_output_data_ready='1' then
                 r_valid <= '0' & r_valid(r_valid'high downto 1);
                 r_last <= '0' & r_last(r_last'high downto 1);
+                r_sop <= '0' & r_sop(r_sop'high downto 1);
 
                 if current_state=st_process then
                     v_x := std_logic_vector(unsigned(r_x) + unsigned(w_sx_inc));
@@ -283,6 +288,9 @@ begin
                     r_valid <= '1' & r_valid(r_valid'high downto 1);
                     if c_x_out=r_width_out-1 then
                         r_last <= '1' & r_last(r_last'high downto 1);
+                    end if;
+                    if c_x_out=0 then
+                        r_sop <= '1' & r_sop(r_sop'high downto 1);
                     end if;
                 end if;
 
@@ -475,7 +483,5 @@ begin
     end process READ_MM;
 
     params_waitrequest <= '0';
-
-    aso_output_data_startofpacket <= '0';
 
 end architecture rtl; -- of acc_bilinear_scaling
