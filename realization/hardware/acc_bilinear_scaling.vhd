@@ -182,7 +182,7 @@ begin
     end process CONTROL_STATE;
 
     -- Determines next state
-    NEXT_STATE_PROCESS: process(current_state, w_proc_flag, w_ram_filled, r_read_status) is
+    NEXT_STATE_PROCESS: process(current_state, w_proc_flag, w_ram_filled, r_read_status, c_x_out, r_width_out) is
     begin
         case current_state is
             when st_wait =>
@@ -215,12 +215,10 @@ begin
     -- Main processing logic
     PROCESSING: process(clk) is
         variable v_x        : std_logic_vector(r_x'range);
-        variable v_alpha_x  : integer range 0 to 2**C_NFRAC-1;
         variable v_floor_x  : integer range 0 to 2**C_DIM_WIDTH-1;
         variable v_x_out    : integer range 0 to 2**C_DIM_WIDTH-1;
 
         variable v_y        : std_logic_vector(r_y'range);
-        variable v_alpha_y  : integer range 0 to 2**C_NFRAC-1;
         variable v_floor_y  : integer range 0 to 2**C_DIM_WIDTH-1;
         variable v_y_out    : integer range 0 to 2**C_DIM_WIDTH-1;
 
@@ -249,7 +247,6 @@ begin
 
                 if current_state = st_process then
                     v_x := std_logic_vector(unsigned(r_x) + unsigned(w_x_inc));
-                    v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
                     v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
                     if (v_floor_x < v_width and c_x_out/=r_width_out-1) then
                         r_x <= v_x;
@@ -269,7 +266,6 @@ begin
 
                     if c_x_out = r_width_out-1 then
                         v_y := std_logic_vector(unsigned(r_y) + unsigned(w_y_inc));
-                        v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
                         v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
                         if (v_floor_y < v_height and c_y_out/=r_height_out-1) then
                             r_y <= v_y;
@@ -399,9 +395,7 @@ begin
     -- Generating RAM reset signals
     RAM_RESET_PROC: process(c_x_out, c_y_out, r_width_out, r_height_out, w_need_new_row, w_ram_sel, r_flush, w_row_cnt, r_floor_y) is
         variable v_ram_sel  : integer range 0 to 1;
-        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
     begin
-        v_height := to_integer(unsigned(w_height));
         if w_ram_sel = '0' then
             v_ram_sel := 0;
         else
@@ -427,9 +421,10 @@ begin
         end if;
     end process RAM_RESET_PROC;
 
-    RAM_READ_ADDRESS: process(current_state, r_read_status, r_floor_x) is
+    RAM_READ_ADDRESS: process(current_state, r_read_status, r_floor_x, w_width) is
         variable v_width    : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
     begin
+        c_ram_rd_addr <= r_floor_x;
         if current_state = st_read then
             v_width := to_integer(unsigned(w_width));
             case r_read_status is
