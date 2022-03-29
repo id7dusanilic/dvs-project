@@ -19,14 +19,14 @@ entity RAM_writer is
         rd                      : in  std_logic;
         rd_addr                 : in  std_logic_vector;
 
-        row_length              : in  std_logic_vector;
-
         data_out_0              : out std_logic_vector;
         data_out_1              : out std_logic_vector;
 
         ram_sel                 : out std_logic;
         ram_filled              : out std_logic_vector(1 downto 0);
 
+        row_count               : out std_logic_vector;
+        reset_row_count         : in  std_logic;
         ram_reset               : in  std_logic_vector(1 downto 0)
     );
 end entity RAM_writer;
@@ -46,6 +46,8 @@ architecture rtl of RAM_writer is
     signal c_wr_addr        : ram_counter_t;
 
     signal c_rd_column      : ram_counter_t;
+
+    signal c_row_count      : integer range 0 to 2**(row_count'high+1)-1;
 
     signal w_data_in        : std_logic_vector(G_RAM_DATA_WIDTH-1 downto 0);
 
@@ -99,28 +101,26 @@ begin
     w_wr_array(1) <= w_wr and not r_ram_filled(1) and r_ram_sel;
 
     WRITE_POSITION: process (clk) is
-        variable v_row_length   : integer;
-        variable v_ram_sel      : integer range 0 to 1;
+        variable v_ram_sel : integer range 0 to 1;
     begin
         if rising_edge(clk) then
             -- Variable init
-            v_row_length := to_integer(unsigned(row_length));
-            if r_ram_sel='1' then
+            if r_ram_sel = '1' then
                 v_ram_sel := 1;
             else
                 v_ram_sel := 0;
             end if;
 
             -- If writing to currently selected RAM increment write address
-            if w_wr_array(v_ram_sel)='1' then
+            if w_wr_array(v_ram_sel) = '1' then
                 c_wr_addr(v_ram_sel) <= c_wr_addr(v_ram_sel) + 1;
                 -- If at the end of a row
-                if c_wr_addr(v_ram_sel) = v_row_length-1 then
+                if asi_input_data_eop = '1' then
                     c_wr_addr(v_ram_sel) <= 0;
                 end if;
             end if;
 
-            if reset='1' then
+            if reset = '1' then
                 c_wr_addr(0) <= 0;
                 c_wr_addr(1) <= 0;
             end if;
@@ -128,24 +128,19 @@ begin
     end process WRITE_POSITION;
 
     RAM_FILLED_STATUSES: process (clk) is
-        variable v_row_length   : integer;
-        variable v_ram_sel      : integer range 0 to 1;
+        variable v_ram_sel : integer range 0 to 1;
     begin
         if rising_edge(clk) then
             -- Variable init
-            v_row_length := to_integer(unsigned(row_length));
-            if r_ram_sel='1' then
+            if r_ram_sel = '1' then
                 v_ram_sel := 1;
             else
                 v_ram_sel := 0;
             end if;
 
-            -- If writing to currently selected RAM
-            if w_wr_array(v_ram_sel)='1' then
-                -- If at the end of a row
-                if c_wr_addr(v_ram_sel) = v_row_length-1 then
-                    r_ram_filled(v_ram_sel) <= '1';
-                end if;
+            -- If writing the end of a row, set ram_filled
+            if w_wr = '1' and asi_input_data_eop = '1' then
+                r_ram_filled(v_ram_sel) <= '1';
             end if;
 
             -- Reset RAM filled flags
@@ -157,35 +152,51 @@ begin
                 r_ram_filled(1) <= '0';
             end if;
 
-            if reset='1' then
+            if reset = '1' then
                 r_ram_filled <= (others => '0');
             end if;
         end if;
     end process RAM_FILLED_STATUSES;
 
     RAM_SELECT: process (clk) is
-        variable v_row_length   : integer;
-        variable v_ram_sel      : integer range 0 to 1;
+        variable v_ram_sel : integer range 0 to 1;
     begin
         if rising_edge(clk) then
             -- Variable init
-            v_row_length := to_integer(unsigned(row_length));
-            if r_ram_sel='1' then
+            if r_ram_sel = '1' then
                 v_ram_sel := 1;
             else
                 v_ram_sel := 0;
             end if;
 
-            -- If writing at the end of a row, toggle ram_sel
-            if w_wr_array(v_ram_sel)='1' and c_wr_addr(v_ram_sel) = v_row_length-1 then
+            -- If writing the end of a row, toggle ram_sel
+            if w_wr_array(v_ram_sel) = '1' and asi_input_data_eop = '1' then
                 r_ram_sel <= not r_ram_sel;
             end if;
 
-            if reset='1' then
+            if reset = '1' then
                 r_ram_sel <= '0';
             end if;
         end if;
     end process RAM_SELECT;
+
+    COUNT_ROWS: process (clk) is
+    begin
+        if rising_edge(clk) then
+            if w_wr = '1' and asi_input_data_eop = '1' then
+                c_row_count <= c_row_count + 1;
+            end if;
+            if reset_row_count = '1' then
+                c_row_count <= 0;
+            end if;
+            if reset = '1' then
+                c_row_count <= 0;
+            end if;
+        end if;
+    end process COUNT_ROWS;
+
+    -- Set output port value
+    row_count <= std_logic_vector(to_unsigned(c_row_count, row_count'high+1));
 
     -- Assignments
     asi_input_data_ready <= w_asi_input_data_ready;

@@ -69,6 +69,10 @@ architecture rtl of acc_bilinear_scaling is
     signal w_ram_filled     : std_logic_vector(1 downto 0);
     -- RAM reset statuses
     signal r_ram_reset      : std_logic_vector(1 downto 0);
+    -- Number of rows written by RAM_writer
+    signal w_row_cnt        : std_logic_vector(C_DIM_WIDTH-1 downto 0);
+    -- Reset row count
+    signal r_reset_row_cnt  : std_logic;
 
     -- RAM read control signals
     signal w_ram_rd         : std_logic;
@@ -134,11 +138,12 @@ begin
             asi_input_data_eop => asi_input_data_eop,
             rd => w_ram_rd,
             rd_addr => w_ram_rd_addr,
-            row_length => w_width,
             data_out_0 => w_ram_data_out(0),
             data_out_1 => w_ram_data_out(1),
             ram_sel => w_ram_sel,
             ram_filled => w_ram_filled,
+            reset_row_count => r_reset_row_cnt,
+            row_count => w_row_cnt,
             ram_reset => r_ram_reset
         );
 
@@ -167,7 +172,7 @@ begin
     begin
         if rising_edge(clk) then
             current_state <= next_state;
-            if reset='1' then
+            if reset = '1' then
                 current_state <= st_wait;
             end if;
         end if;
@@ -178,13 +183,13 @@ begin
     begin
         case current_state is
             when st_wait =>
-                if w_ram_filled(0)='1' and w_ram_filled(1)='1' then
+                if w_ram_filled(0) = '1' and w_ram_filled(1) = '1' then
                     next_state <= st_read;
                 else
                     next_state <= st_wait;
                 end if;
             when st_read =>
-                if r_read_status(0)='0' then
+                if r_read_status(0) = '0' then
                     next_state <= st_read;
                 else
                     next_state <= st_process;
@@ -232,12 +237,12 @@ begin
             v_y := std_logic_vector(unsigned(r_y));
             v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
 
-            if aso_output_data_ready='1' then
+            if aso_output_data_ready = '1' then
                 r_valid <= '0' & r_valid(r_valid'high downto 1);
                 r_last <= '0' & r_last(r_last'high downto 1);
                 r_sop <= '0' & r_sop(r_sop'high downto 1);
 
-                if current_state=st_process then
+                if current_state = st_process then
                     v_x := std_logic_vector(unsigned(r_x) + unsigned(w_x_inc));
                     v_alpha_x := to_integer(unsigned(v_x(C_NFRAC-1 downto 0)));
                     v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
@@ -254,7 +259,7 @@ begin
                         c_x_out <= 0;
                     end if;
 
-                    if c_x_out=r_width_out-1 then
+                    if c_x_out = r_width_out-1 then
                         v_y := std_logic_vector(unsigned(r_y) + unsigned(w_y_inc));
                         v_alpha_y := to_integer(unsigned(v_y(C_NFRAC-1 downto 0)));
                         v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
@@ -285,10 +290,10 @@ begin
                     r_subp_botright <= r_alpha_x * v_bottom(1);
 
                     r_valid <= '1' & r_valid(r_valid'high downto 1);
-                    if c_x_out=r_width_out-1 then
+                    if c_x_out = r_width_out-1 then
                         r_last <= '1' & r_last(r_last'high downto 1);
                     end if;
-                    if c_x_out=0 then
+                    if c_x_out = 0 then
                         r_sop <= '1' & r_sop(r_sop'high downto 1);
                     end if;
                 end if;
@@ -300,7 +305,7 @@ begin
 
                 r_prod <= std_logic_vector(to_unsigned((r_subp_top + r_subp_bot) / 2**C_NFRAC, C_DATA_WIDTH));
             end if;
-            if reset='1' then
+            if reset = '1' then
                 r_subp_topleft <= 0;
                 r_subp_botleft <= 0;
                 r_subp_topright <= 0;
@@ -326,55 +331,98 @@ begin
     -- Generating w_proc_flag
     -- Current group of pixels is processed current state is st_process and new pixel is needed
     -- and the output was ready so the pipeline moved
-    w_proc_flag <= '1' when (w_floor_x_incremented>r_floor_x or c_x_out=r_width_out-1) and current_state=st_process and aso_output_data_ready='1' else '0';
+    w_proc_flag <= '1' when (w_floor_x_incremented > r_floor_x or c_x_out = r_width_out-1) and current_state = st_process and aso_output_data_ready = '1' else '0';
 
     -- New row is needed when next floor y value is greater the current, but only if the next floor y value
     -- is in the range (not greater than image height)
-    w_need_new_row <= '1' when w_floor_y_incremented>r_floor_y and w_floor_y_incremented<to_integer(unsigned(w_height))-1 else '0';
+    w_need_new_row <= '1' when
+        (c_x_out = r_width_out-1
+        and w_floor_y_incremented > r_floor_y
+        and w_floor_y_incremented < to_integer(unsigned(w_height))-1)
+        or r_floor_y > to_integer(unsigned(w_row_cnt))
+        else '0';
+
+    -- This process makes sure that all input rows are read, even if they are not
+    -- used for calculation (This is neccessary at the end of the image in case of
+    -- downscaling.
+    FLUSH_PROCESS: process (clk) is
+        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
+        variable v_row_cnt  : integer range 0 to 2**C_DIM_WIDTH - 1;
+    begin
+        if rising_edge(clk) then
+            v_height := to_integer(unsigned(w_height));
+            v_row_cnt := to_integer(unsigned(w_row_cnt));
+
+            r_reset_row_cnt <= '0';
+
+            -- Set when at the end of image
+            if c_x_out = r_width_out-1 and c_y_out = r_height_out-1 then
+                r_flush <= '1';
+                -- Now it's safe to reset row count of the RAM_writer
+                r_reset_row_cnt <= '1';
+            end if;
+
+            -- Reset when all input pixels are written
+            if v_row_cnt = v_height then
+                r_flush <= '0';
+            end if;
+
+            if reset = '1' then
+                r_flush <= '0';
+                r_reset_row_cnt <= '0';
+            end if;
+        end if;
+    end process FLUSH_PROCESS;
+
 
     -- Generating RAM rd signal
-    w_ram_rd <= '1' when current_state=st_read else '0';
+    w_ram_rd <= '1' when current_state = st_read else '0';
 
     -- Generating RAM reset signals
-    RAM_RESET_PROC: process(c_x_out, c_y_out, r_width_out, r_height_out, w_ram_sel) is
-        variable v_ram_sel : integer range 0 to 1;
+    RAM_RESET_PROC: process(c_x_out, c_y_out, r_width_out, r_height_out, w_need_new_row, w_ram_sel, r_flush) is
+        variable v_ram_sel  : integer range 0 to 1;
+        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
     begin
-        if w_ram_sel='0' then
+        v_height := to_integer(unsigned(w_height));
+        if w_ram_sel = '0' then
             v_ram_sel := 0;
         else
             v_ram_sel := 1;
         end if;
+        -- Default value
+        r_ram_reset <= (others => '0');
+
         -- If at the end of row and new row is needed for computation
-        if c_x_out=r_width_out-1 and w_need_new_row='1' then
+        if w_need_new_row = '1' then
             r_ram_reset(v_ram_sel) <= '1';
-        -- If at the end of last output row
-        elsif c_x_out=r_width_out-1 and c_y_out = r_height_out-1 then
+        -- If last input rows need to be flushed
+        elsif r_flush = '1' then
+            r_ram_reset <= (others => '1');
+        -- If at the end of processing
+        elsif c_x_out = r_width_out-1 and c_y_out = r_height_out-1 then
             r_ram_reset <= (others => '1');
         else
             r_ram_reset <= (others => '0');
         end if;
     end process RAM_RESET_PROC;
 
-    -- TODO: this can be improved
     RAM_READ_ADDRESS: process(current_state, r_read_status, r_floor_x) is
         variable v_width    : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
-        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
     begin
         if current_state = st_read then
             v_width := to_integer(unsigned(w_width));
-            v_height := to_integer(unsigned(w_height));
             case r_read_status is
                 when "100" =>
                     c_ram_rd_addr <= r_floor_x;
                 when "010" =>
-                    if r_floor_x=v_width-1 then
+                    if r_floor_x = v_width-1 then
                         c_ram_rd_addr <= r_floor_x;
                     else
                         c_ram_rd_addr <= r_floor_x + 1;
                     end if;
                 when "001" =>
                     -- If at the end of the row, saturate
-                    if r_floor_x=v_width-1 then
+                    if r_floor_x = v_width-1 then
                         c_ram_rd_addr <= r_floor_x;
                     else
                         c_ram_rd_addr <= r_floor_x + 1;
@@ -386,28 +434,26 @@ begin
     end process RAM_READ_ADDRESS;
     w_ram_rd_addr <= std_logic_vector(to_unsigned(c_ram_rd_addr, C_ADDR_WIDTH));
 
-    -- TODO: this can be improved
     READ_DATA_BUFFERS: process(clk) is
         variable v_sel_top      : integer range 0 to 1;
         variable v_sel_bottom   : integer range 0 to 1;
         variable v_ram_sel      : integer range 0 to 1;
     begin
         if rising_edge(clk) then
-            if v_ram_sel=0 then
-                v_sel_bottom := 1;
-            else
-                v_sel_bottom := 0;
-            end if;
-            if v_ram_sel=0 then
-                v_sel_top := 0;
-            else
-                v_sel_top := 1;
-            end if;
-            if w_ram_sel='0' then
+            if w_ram_sel = '0' then
                 v_ram_sel := 0;
             else
                 v_ram_sel := 1;
             end if;
+
+            if v_ram_sel = 0 then
+                v_sel_top := 0;
+                v_sel_bottom := 1;
+            else
+                v_sel_top := 1;
+                v_sel_bottom := 0;
+            end if;
+
             if current_state = st_read then
                 case r_read_status is
                     when "100" =>
@@ -423,7 +469,7 @@ begin
                 end case;
                 r_read_status <= r_read_status(0) & r_read_status(r_read_status'high downto 1);
             end if;
-            if reset='1' then
+            if reset = '1' then
                 r_top <= (others => 0);
                 r_bottom <= (others => 0);
                 r_read_status <= (r_read_status'high => '1', others => '0');
