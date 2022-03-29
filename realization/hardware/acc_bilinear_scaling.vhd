@@ -229,10 +229,12 @@ begin
 
         variable v_top      : row_data_t;
         variable v_bottom   : row_data_t;
+        variable v_row_cnt  : integer range 0 to 2**C_DIM_WIDTH - 1;
     begin
         if rising_edge(clk) then
             v_width  := to_integer(unsigned(w_width));
             v_height := to_integer(unsigned(w_height));
+            v_row_cnt := to_integer(unsigned(w_row_cnt));
 
             -- Variables initialized to current values because they're used for determining v_top and v_bottom
             v_x := std_logic_vector(unsigned(r_x));
@@ -258,6 +260,9 @@ begin
                     v_x_out := c_x_out + 1;
                     if (v_x_out <= r_width_out-1) then
                         c_x_out <= v_x_out;
+                    -- Hold count until reset_row_count is generated
+                    elsif (c_x_out = r_width_out-1 and c_y_out = r_height_out-1 and v_row_cnt < v_height) then
+                        c_x_out <= c_x_out;
                     else
                         c_x_out <= 0;
                     end if;
@@ -275,6 +280,9 @@ begin
                         v_y_out := c_y_out + 1;
                         if (v_y_out <= r_height_out-1) then
                             c_y_out <= v_y_out;
+                        -- Hold count until reset_row_count is generated
+                        elsif (c_y_out = r_height_out-1 and v_row_cnt < v_height) then
+                            c_y_out <= c_y_out;
                         else
                             c_y_out <= 0;
                         end if;
@@ -299,6 +307,12 @@ begin
                     if c_x_out = 0 then
                         r_sop <= '1' & r_sop(r_sop'high downto 1);
                     end if;
+                end if;
+
+                -- These counters were held until reset_row_count was generated
+                if r_reset_row_cnt = '1' then
+                    c_x_out <= 0;
+                    c_y_out <= 0;
                 end if;
 
                 r_subp_top <= (2**C_NFRAC - r_alpha_y_d1) * ((r_subp_topleft + r_subp_topright) / 2**C_NFRAC);
@@ -342,7 +356,6 @@ begin
         (c_x_out = r_width_out-1
         and w_floor_y_incremented > r_floor_y
         and w_floor_y_incremented < to_integer(unsigned(w_height))-1)
-        or r_floor_y > to_integer(unsigned(w_row_cnt))
         else '0';
 
     -- This process makes sure that all input rows are read, even if they are not
@@ -361,13 +374,15 @@ begin
             -- Set when at the end of image
             if c_x_out = r_width_out-1 and c_y_out = r_height_out-1 then
                 r_flush <= '1';
-                -- Now it's safe to reset row count of the RAM_writer
-                r_reset_row_cnt <= '1';
             end if;
 
             -- Reset when all input pixels are written
             if v_row_cnt = v_height then
                 r_flush <= '0';
+                if c_x_out = r_width_out-1 and c_y_out = r_height_out-1 then
+                    -- Now it's safe to reset row count of the RAM_writer
+                    r_reset_row_cnt <= '1';
+                end if;
             end if;
 
             if reset = '1' then
@@ -382,7 +397,7 @@ begin
     w_ram_rd <= '1' when current_state = st_read else '0';
 
     -- Generating RAM reset signals
-    RAM_RESET_PROC: process(c_x_out, c_y_out, r_width_out, r_height_out, w_need_new_row, w_ram_sel, r_flush) is
+    RAM_RESET_PROC: process(c_x_out, c_y_out, r_width_out, r_height_out, w_need_new_row, w_ram_sel, r_flush, w_row_cnt, r_floor_y) is
         variable v_ram_sel  : integer range 0 to 1;
         variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
     begin
@@ -398,6 +413,9 @@ begin
         -- If at the end of row and new row is needed for computation
         if w_need_new_row = '1' then
             r_ram_reset(v_ram_sel) <= '1';
+        -- Needed row has greater index than last row read
+        elsif r_floor_y > to_integer(unsigned(w_row_cnt)) then
+            r_ram_reset <= (others => '1');
         -- If last input rows need to be flushed
         elsif r_flush = '1' then
             r_ram_reset <= (others => '1');
