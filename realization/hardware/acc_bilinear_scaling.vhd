@@ -119,6 +119,9 @@ architecture rtl of acc_bilinear_scaling is
     signal w_proc_flag      : std_logic;
     signal w_need_new_row   : std_logic;
 
+    -- Sticky bit to receive all rows left although not neccessary
+    signal r_flush          : std_logic;
+
     -- Informs about the read status of current pixel group
     signal r_read_status    : std_logic_vector(2 downto 0);
 begin
