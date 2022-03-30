@@ -47,7 +47,7 @@ void create_transmit_descriptors(alt_sgdma_descriptor* descriptors, image_t imag
             (uint16_t)image.width,      /* Length of the buffer. */
             0,                          /* Reads are not from a fixed location. */
             0,                          /* Start-of-packet disabled. */
-            0,                          /* End-of-packet disabled. */
+            1,                          /* End-of-packet enabled. */
             0                           /* One channel only. */
         );
     }
@@ -89,8 +89,8 @@ image_t bilinear_scaling_hw(
 
     /* Input image coordinates increment. */
     /* Fixed point representation (BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC) */
-    uint16_t increment_x = to_fixed_point(1/sx_float, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
-    uint16_t increment_y = to_fixed_point(1/sy_float, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
+    uint16_t increment_x = to_fixed_point(1/sx_fx, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
+    uint16_t increment_y = to_fixed_point(1/sy_fx, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
 
     /* Pointers to memory allocated for SGDMA descriptors. */
     void* transmit_alloc;
@@ -104,6 +104,9 @@ image_t bilinear_scaling_hw(
     create_transmit_descriptors(transmit_descriptors, input);
     create_receive_descriptors(receive_descriptors, output);
 
+    transmit_descriptors[input.height].control = 0x00;
+    receive_descriptors[output.height].control = 0x00;
+
     /* Write params to the peripheral. */
     IOWR_16DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_WIDTH_ADDR, input.width);
     IOWR_16DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_HEIGHT_ADDR, input.height);
@@ -113,11 +116,11 @@ image_t bilinear_scaling_hw(
     IOWR_8DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_SY_ADDR, sy);
 
     /* Start SGDMAs. */
-    if(alt_avalon_sgdma_do_async_transfer(sgdma_in, &transmit_descriptors[0]) != 0)
+    if(alt_avalon_sgdma_do_async_transfer(sgdma_out, &transmit_descriptors[0]) != 0)
     {
         printf("Writing the head of the transmit descriptor list to the DMA failed\n");
     }
-    if(alt_avalon_sgdma_do_async_transfer(sgdma_out, &receive_descriptors[0]) != 0)
+    if(alt_avalon_sgdma_do_async_transfer(sgdma_in, &receive_descriptors[0]) != 0)
     {
         printf("Writing the head of the receive descriptor list to the DMA failed\n");
     }
@@ -127,6 +130,9 @@ image_t bilinear_scaling_hw(
     printf("Transmit SGDMA completed.\n");
     while(*rx_done == 0x0000);
     printf("Receive SGDMA completed.\n");
+
+    /* Set done bit to reset system internally. */
+    IOWR_8DIRECT(ACC_BILINEAR_SCALING_BASE, ACC_BILINEAR_SCALING_CTL_ADDR, 0x01);
 
     /* Reset flags. */
     *rx_done = 0x0000;

@@ -923,13 +923,13 @@
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
-                <slaveDescriptor>sgdma_out</slaveDescriptor>
+                <slaveDescriptor>sgdma_in</slaveDescriptor>
                 <addressRange>0x04001080 - 0x040010BF</addressRange>
                 <addressSpan>64</addressSpan>
                 <attributes/>
         </MemoryMap>
         <MemoryMap>
-                <slaveDescriptor>sgdma_in</slaveDescriptor>
+                <slaveDescriptor>sgdma_out</slaveDescriptor>
                 <addressRange>0x040010C0 - 0x040010FF</addressRange>
                 <addressSpan>64</addressSpan>
                 <attributes/>

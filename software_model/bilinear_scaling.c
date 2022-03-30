@@ -27,8 +27,8 @@ image_t bilinear_scaling_sw(image_t input, float sx_float, float sy_float) {
 
     /* Input image coordinates increment. */
     /* Fixed point representation (BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC) */
-    uint16_t increment_x = to_fixed_point(1/sx_float, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
-    uint16_t increment_y = to_fixed_point(1/sy_float, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
+    uint16_t increment_x = to_fixed_point(1/sx_fx, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
+    uint16_t increment_y = to_fixed_point(1/sy_fx, BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC);
 
     /* Fixed point representation (BILINEAR_SCALING_NINT, BILINEAR_SCALING_NFRAC) */
     uint32_t alpha_x, alpha_y;

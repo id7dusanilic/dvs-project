@@ -5,12 +5,13 @@
 
 #include "software_model/utils.h"
 
-#define ACC_BILINEAR_SCALING_SX_ADDR (0)
-#define ACC_BILINEAR_SCALING_SY_ADDR (1)
-#define ACC_BILINEAR_SCALING_SX_INV_ADDR (2)
-#define ACC_BILINEAR_SCALING_SY_INV_ADDR (4)
-#define ACC_BILINEAR_SCALING_WIDTH_ADDR (6)
-#define ACC_BILINEAR_SCALING_HEIGHT_ADDR (8)
+#define ACC_BILINEAR_SCALING_SX_ADDR        (0x0)
+#define ACC_BILINEAR_SCALING_SY_ADDR        (0x1)
+#define ACC_BILINEAR_SCALING_SX_INV_ADDR    (0x2)
+#define ACC_BILINEAR_SCALING_SY_INV_ADDR    (0x4)
+#define ACC_BILINEAR_SCALING_WIDTH_ADDR     (0x6)
+#define ACC_BILINEAR_SCALING_HEIGHT_ADDR    (0x8)
+#define ACC_BILINEAR_SCALING_CTL_ADDR       (0xa)
 
 image_t bilinear_scaling_hw(
         image_t input,
