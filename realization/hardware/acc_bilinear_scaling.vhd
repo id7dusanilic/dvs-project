@@ -141,7 +141,7 @@ begin
             reset => reset,
             asi_input_data_data => asi_input_data_data,
             asi_input_data_valid => asi_input_data_valid,
-            asi_input_data_ready => asi_input_data_ready,
+            asi_input_data_ready => w_asi_input_data_ready,
             asi_input_data_sop => asi_input_data_sop,
             asi_input_data_eop => asi_input_data_eop,
             rd => w_ram_rd,
@@ -176,7 +176,7 @@ begin
     aso_output_data_startofpacket <= r_sop(0);
 
     -- Connecting to output port
-    w_asi_input_data_ready <= asi_input_data_ready;
+    asi_input_data_ready <= w_asi_input_data_ready;
 
     -- Sequential state change
     CONTROL_STATE: process(clk) is
