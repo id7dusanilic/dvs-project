@@ -73,6 +73,11 @@ architecture rtl of acc_bilinear_scaling is
     signal w_row_cnt        : std_logic_vector(C_DIM_WIDTH-1 downto 0);
     -- Reset row count
     signal r_reset_row_cnt  : std_logic;
+    -- Signal used for reinitilizing all necessary signals at the end of image processing
+    signal r_reinit         : std_logic;
+
+    -- Signal used so the output port can be read
+    signal w_asi_input_data_ready  : std_logic;
 
     -- RAM read control signals
     signal w_ram_rd         : std_logic;
@@ -170,6 +175,9 @@ begin
     aso_output_data_endofpacket <= r_last(0);
     aso_output_data_startofpacket <= r_sop(0);
 
+    -- Connecting to output port
+    w_asi_input_data_ready <= asi_input_data_ready;
+
     -- Sequential state change
     CONTROL_STATE: process(clk) is
     begin
@@ -248,7 +256,7 @@ begin
                 if current_state = st_process then
                     v_x := std_logic_vector(unsigned(r_x) + unsigned(w_x_inc));
                     v_floor_x := to_integer(unsigned(v_x(v_x'high downto C_NFRAC)));
-                    if (v_floor_x < v_width and c_x_out/=r_width_out-1) then
+                    if (v_floor_x < v_width and c_x_out /= r_width_out-1) then
                         r_x <= v_x;
                     else
                         r_x <= (others => '0');
@@ -258,7 +266,7 @@ begin
                     if (v_x_out <= r_width_out-1) then
                         c_x_out <= v_x_out;
                     -- Hold count until reset_row_count is generated
-                    elsif (c_x_out = r_width_out-1 and c_y_out = r_height_out-1 and v_row_cnt < v_height) then
+                    elsif (c_x_out = r_width_out-1 and c_y_out = r_height_out-1 and r_reinit = '0') then
                         c_x_out <= c_x_out;
                     else
                         c_x_out <= 0;
@@ -267,7 +275,7 @@ begin
                     if c_x_out = r_width_out-1 then
                         v_y := std_logic_vector(unsigned(r_y) + unsigned(w_y_inc));
                         v_floor_y := to_integer(unsigned(v_y(v_y'high downto C_NFRAC)));
-                        if (v_floor_y < v_height and c_y_out/=r_height_out-1) then
+                        if (v_floor_y < v_height and c_y_out /= r_height_out-1) then
                             r_y <= v_y;
                         else
                             r_y <= (others => '0');
@@ -277,7 +285,7 @@ begin
                         if (v_y_out <= r_height_out-1) then
                             c_y_out <= v_y_out;
                         -- Hold count until reset_row_count is generated
-                        elsif (c_y_out = r_height_out-1 and v_row_cnt < v_height) then
+                        elsif (c_y_out = r_height_out-1 and r_reinit = '0') then
                             c_y_out <= c_y_out;
                         else
                             c_y_out <= 0;
@@ -306,9 +314,11 @@ begin
                 end if;
 
                 -- These counters were held until reset_row_count was generated
-                if r_reset_row_cnt = '1' then
+                if r_reinit = '1' then
                     c_x_out <= 0;
                     c_y_out <= 0;
+                    r_x <= (others => '0');
+                    r_y <= (others => '0');
                 end if;
 
                 r_subp_top <= (2**C_NFRAC - r_alpha_y_d1) * ((r_subp_topleft + r_subp_topright) / 2**C_NFRAC);
@@ -356,60 +366,91 @@ begin
 
     -- This process makes sure that all input rows are read, even if they are not
     -- used for calculation (This is neccessary at the end of the image in case of
-    -- downscaling.
+    -- downscaling or upscaling when truncate error piles up.)
     FLUSH_PROCESS: process (clk) is
         variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
         variable v_row_cnt  : integer range 0 to 2**C_DIM_WIDTH - 1;
     begin
         if rising_edge(clk) then
+            -- Variable init
             v_height := to_integer(unsigned(w_height));
             v_row_cnt := to_integer(unsigned(w_row_cnt));
 
-            r_reset_row_cnt <= '0';
+            -- Default value
+            r_reinit <= '0';
 
             -- Set when at the end of image
             if c_x_out = r_width_out-1 and c_y_out = r_height_out-1 then
                 r_flush <= '1';
             end if;
 
-            -- Reset when all input pixels are written
-            if v_row_cnt = v_height then
+            -- Reset when reinitializing
+            if r_reinit = '1' then
                 r_flush <= '0';
-                if c_x_out = r_width_out-1 and c_y_out = r_height_out-1 then
-                    -- Now it's safe to reset row count of the RAM_writer
-                    r_reset_row_cnt <= '1';
-                end if;
+            end if;
+
+            -- Generate r_reinit signal when all output pixels have been processed
+            if c_x_out = r_width_out-1 and c_y_out = r_height_out-1 then
+                -- r_reinit will be set when w_proc_flag is genereated, meaning that processing is finished
+                -- or when there is an end of packet signal at the input which is the case when all output
+                -- pixels are processed, but there is still some input data to be flushed :(
+                r_reinit <= w_proc_flag or asi_input_data_eop;
             end if;
 
             if reset = '1' then
                 r_flush <= '0';
-                r_reset_row_cnt <= '0';
+                r_reinit <= '0';
             end if;
         end if;
     end process FLUSH_PROCESS;
 
+    RESET_ROW_CNT_PROC: process (w_height, w_row_cnt, asi_input_data_eop, asi_input_data_valid, w_asi_input_data_ready) is
+        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
+        variable v_row_cnt  : integer range 0 to 2**C_DIM_WIDTH - 1;
+    begin
+        -- Variable init
+        v_height := to_integer(unsigned(w_height));
+        v_row_cnt := to_integer(unsigned(w_row_cnt));
+
+        -- Reset row count as soon as the last input row is read
+        if v_row_cnt = v_height-1 and asi_input_data_eop = '1' and w_asi_input_data_ready = '1' and asi_input_data_valid = '1' then
+            r_reset_row_cnt <= '1';
+        else
+            r_reset_row_cnt <= '0';
+        end if;
+    end process RESET_ROW_CNT_PROC;
 
     -- Generating RAM rd signal
     w_ram_rd <= '1' when current_state = st_read else '0';
 
     -- Generating RAM reset signals
     RAM_RESET_PROC: process(c_x_out, c_y_out, r_width_out, r_height_out, w_need_new_row, w_ram_sel, r_flush, w_row_cnt, r_floor_y) is
-        variable v_ram_sel  : integer range 0 to 1;
+        variable v_ram_active   : integer range 0 to 1;
+        variable v_ram_inactive : integer range 0 to 1;
     begin
+
+        -- if w_ram_sel = '0' then v_ram_sel := 0; else v_ram_sel := 1; end if;
         if w_ram_sel = '0' then
-            v_ram_sel := 0;
+            v_ram_active := 0;
+            v_ram_inactive := 1;
         else
-            v_ram_sel := 1;
+            v_ram_active := 1;
+            v_ram_inactive := 0;
         end if;
         -- Default value
         r_ram_reset <= (others => '0');
 
         -- If at the end of row and new row is needed for computation
         if w_need_new_row = '1' then
-            r_ram_reset(v_ram_sel) <= '1';
-        -- Needed row has greater index than last row read
+            r_ram_reset(v_ram_active) <= '1';
+        -- When needed row has greater index than last row read, at least two
+        -- new rows have to be read so both RAMs are reset
         elsif r_floor_y > to_integer(unsigned(w_row_cnt)) then
             r_ram_reset <= (others => '1');
+        -- When needed row has equal index with the last row read, only one more row
+        -- needs to be read after the current one
+        elsif r_floor_y = to_integer(unsigned(w_row_cnt)) then
+            r_ram_reset(v_ram_inactive) <='1';
         -- If last input rows need to be flushed
         elsif r_flush = '1' then
             r_ram_reset <= (others => '1');
