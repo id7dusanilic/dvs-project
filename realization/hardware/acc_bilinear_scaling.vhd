@@ -54,6 +54,7 @@ architecture rtl of acc_bilinear_scaling is
     signal w_y_inc          : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
     signal w_width          : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
     signal w_height         : std_logic_vector(2*C_MM_DATA_WIDTH-1 downto 0);
+    signal w_ctl            : std_logic_vector(C_MM_DATA_WIDTH-1 downto 0);
 
     -- Output image dimensions
     signal r_width_out      : integer range 0 to 2**C_DIM_WIDTH;
@@ -162,6 +163,7 @@ begin
     w_y_inc  <= register_map(C_Y_INC_ADDR+1) & register_map(C_Y_INC_ADDR);
     w_width  <= register_map(C_WIDTH_ADDR+1) & register_map(C_WIDTH_ADDR);
     w_height <= register_map(C_HEIGHT_ADDR+1) & register_map(C_HEIGHT_ADDR);
+    w_ctl    <= register_map(C_CTL_ADDR);
 
     -- Calculating alpha and floor values
     r_alpha_x <= to_integer(unsigned(r_x(C_NFRAC-1 downto 0)));
@@ -404,21 +406,20 @@ begin
         end if;
     end process FLUSH_PROCESS;
 
-    RESET_ROW_CNT_PROC: process (w_height, w_row_cnt, asi_input_data_eop, asi_input_data_valid, w_asi_input_data_ready) is
-        variable v_height   : integer range 0 to 2**(2*C_MM_DATA_WIDTH) - 1;
-        variable v_row_cnt  : integer range 0 to 2**C_DIM_WIDTH - 1;
+    CTL_REG_PROC: process(clk) is
+        variable v_address : integer range 0 to 2**C_MM_ADDR_WIDTH - 1;
     begin
-        -- Variable init
-        v_height := to_integer(unsigned(w_height));
-        v_row_cnt := to_integer(unsigned(w_row_cnt));
-
-        -- Reset row count as soon as the last input row is read
-        if v_row_cnt = v_height-1 and asi_input_data_eop = '1' and w_asi_input_data_ready = '1' and asi_input_data_valid = '1' then
-            r_reset_row_cnt <= '1';
-        else
+        if rising_edge(clk) then
+            v_address := to_integer(unsigned(params_address));
             r_reset_row_cnt <= '0';
+            if v_address = C_CTL_ADDR and params_writedata(C_CTL_RESET) = '1' and params_write = '1' then
+                r_reset_row_cnt <= '1';
+            end if;
+            if reset = '1' then
+                r_reset_row_cnt <= '0';
+            end if;
         end if;
-    end process RESET_ROW_CNT_PROC;
+    end process CTL_REG_PROC;
 
     -- Generating RAM rd signal
     w_ram_rd <= '1' when current_state = st_read else '0';

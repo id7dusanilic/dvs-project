@@ -167,6 +167,14 @@ begin
 
         params_write <= '0';
         reset_source <= '0';
+
+        wait for 120 ms;
+        avmm_addr_wr <= C_CTL_ADDR;
+        params_writedata <= (C_CTL_RESET => '1', others => '0');
+        params_write <= '1';
+        wait for C_TCLK;
+        params_write <= '0';
+
         wait;
     end process;
 
