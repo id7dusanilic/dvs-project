@@ -73,7 +73,7 @@ architecture rtl of acc_bilinear_scaling is
     -- Number of rows written by RAM_writer
     signal w_row_cnt        : std_logic_vector(C_DIM_WIDTH-1 downto 0);
     -- Reset row count
-    signal r_reset_row_cnt  : std_logic;
+    signal r_ctl_reset      : std_logic;
     -- Signal used for reinitilizing all necessary signals at the end of image processing
     signal r_reinit         : std_logic;
 
@@ -151,7 +151,7 @@ begin
             data_out_1 => w_ram_data_out(1),
             ram_sel => w_ram_sel,
             ram_filled => w_ram_filled,
-            reset_row_count => r_reset_row_cnt,
+            reset_row_count => r_ctl_reset,
             row_count => w_row_cnt,
             ram_reset => r_ram_reset
         );
@@ -386,8 +386,8 @@ begin
                 r_flush <= '1';
             end if;
 
-            -- Reset when reinitializing
-            if r_reinit = '1' then
+            -- Reset when resetting
+            if r_ctl_reset = '1' then
                 r_flush <= '0';
             end if;
 
@@ -411,12 +411,12 @@ begin
     begin
         if rising_edge(clk) then
             v_address := to_integer(unsigned(params_address));
-            r_reset_row_cnt <= '0';
+            r_ctl_reset <= '0';
             if v_address = C_CTL_ADDR and params_writedata(C_CTL_RESET) = '1' and params_write = '1' then
-                r_reset_row_cnt <= '1';
+                r_ctl_reset <= '1';
             end if;
             if reset = '1' then
-                r_reset_row_cnt <= '0';
+                r_ctl_reset <= '0';
             end if;
         end if;
     end process CTL_REG_PROC;
